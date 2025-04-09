@@ -8,9 +8,9 @@ from bs4 import BeautifulSoup
 import nltk
 nltk.download('punkt_tab')
 from nltk.tokenize import sent_tokenize
-from models import Book, Chapter, Sentence, SentenceTranslation, TranslationTypeEnum, db
 from lxml import etree
 from dataclasses import dataclass
+import sys
 
 @dataclass
 class NavItem:
@@ -195,7 +195,16 @@ for file_path in glob(os.path.join(books_directory, "*.epub")):
 if __name__ == "__main__":
     output_test_files = True
     for book_to_add in books_to_add:
-        chapters, language = parse_epub(os.path.join(books_directory, book_to_add["file_path"]))
+        if len(sys.argv) > 1:
+            input_file_path = sys.argv[1]
+            if os.path.exists(input_file_path):
+                chapters, language = parse_epub(input_file_path)
+            else:
+                print(f"File {input_file_path} does not exist. Falling back to default behavior.")
+                chapters, language = parse_epub(os.path.join(books_directory, book_to_add["file_path"]))
+        else:
+            chapters, language = parse_epub(os.path.join(books_directory, book_to_add["file_path"]))
+
         print("Chapters found:", len(chapters))
         for chapter in chapters:
             print(chapter["title"])
