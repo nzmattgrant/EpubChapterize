@@ -1,16 +1,32 @@
 from glob import glob
-from html.parser import HTMLParser
 import os
 import re
+from utils.spacy_tools import get_nlp_model
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
 import nltk
 nltk.download('punkt_tab')
-from nltk.tokenize import sent_tokenize
 from lxml import etree
 from dataclasses import dataclass
-import sys
+import syntok.segmenter as segmenter
+import spacy
+
+def get_nlp_model(language_code):
+    if language_code == 'en':
+        return spacy.load('en_core_web_trf')
+    elif language_code == 'de':
+        return spacy.load('de_dep_news_trf')
+    elif language_code == 'it':
+        return spacy.load('it_core_news_trf')
+    elif language_code == 'es':
+        return spacy.load('es_dep_news_trf')
+    elif language_code == 'fr':
+        return spacy.load('fr_dep_news_trf')
+    else:
+        return None
+
+nlp_models = {}
 
 @dataclass
 class NavItem:
@@ -24,6 +40,30 @@ class HeaderMatch:
     header_text: str
     header_xpath: str
     nav_item: NavItem
+
+sent_method = "syntok"  # Options: "nltk", "spacy", "syntok"
+
+def syntok_segmenter(text):
+    sentences = []
+    for paragraph in segmenter.process(text):
+        for sentence in paragraph:
+            sentence = ''.join(token.spacing + token.value for token in sentence)
+            sentences.append(sentence)
+    return sentences
+
+def get_sent_method(language_code):
+    if sent_method == "nltk":
+        return nltk.sent_tokenize
+    elif sent_method == "spacy":
+        nlp = get_nlp_model(language_code)
+        if nlp:
+            return lambda text: [sent.text for sent in nlp(text).sents]
+        else:
+            raise ValueError(f"Unsupported language code for spaCy: {language_code}")
+    elif sent_method == "syntok":
+        return lambda text: [sent for sent in syntok_segmenter(text)]
+    else:
+        raise ValueError(f"Unknown sentence segmentation method: {sent_method}")
 
 def get_matched_header_for_nav_item(nav_item: NavItem, book) -> HeaderMatch:
     nav_label = nav_item.nav_label
@@ -116,6 +156,11 @@ def parse_epub(file_path):
     nav_item_infos = get_nav_items_standard_gutenberg_epub3(file_path)
     language = book.get_metadata('DC', 'language')
     language = language[0][0] if language else 'en'
+    if language in nlp_models:
+        get_sentences = nlp_models[language]
+    else:
+        get_sentences = get_sent_method(language)
+        nlp_models[language] = get_sentences
     chapters = []
     matched_candidate_headers: list[HeaderMatch] = []
     for nav_item_info in nav_item_infos:
@@ -146,21 +191,26 @@ def parse_epub(file_path):
                 heading_text = nav_item_info.nav_label
                 if "THE FULL PROJECT GUTENBERG LICENSE" in heading_text:
                     continue
-                section = {'title': heading_text, 'content': ''}
+                section = {'title': heading_text, 'paragraphs': []}
                 next_heading = headers_with_nav_items[i + 1] if i + 1 < len(headers_with_nav_items) else None
                 for sibling in header_match.find_next_siblings():
                     if sibling == next_heading:
                         break
                     if sibling.name == 'p':
-                        section['content'] += sibling.get_text()
+                        section['paragraphs'].append(sibling.get_text(separator=" ", strip=True))
                 sections.append(section)
 
             no_sentences_heading = ''
             for section in sections:
                 chapter_title = no_sentences_heading + section['title']
                 chapter_title = chapter_title.replace('\n', ' ')
-                chapter_text = section['content']
-                sentences = sent_tokenize(chapter_text.replace(chapter_title, ''))
+                paragraphs = section['paragraphs']
+                sentences = []
+                for paragraph in paragraphs:
+                    transformed_sentences = get_sentences(paragraph.replace(chapter_title, ''))
+                    for sentence in transformed_sentences:
+                        if sentence.strip():  # Check if the sentence is not empty or whitespace
+                            sentences.append(sentence)
                 if sentences:
                     chapters.append({
                         'title': chapter_title,

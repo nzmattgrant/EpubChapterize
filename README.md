@@ -30,6 +30,32 @@ To set up the project, follow these steps:
     ```bash
     pip install -r requirements.txt
     ```
+5. Install additional language models for spaCy (if needed):
+
+    Depending on the languages you plan to process, you may need to install specific spaCy language models. Use the following commands to install them:
+
+    - For English:
+        ```bash
+        python -m spacy download en_core_web_trf
+        ```
+    - For German:
+        ```bash
+        python -m spacy download de_dep_news_trf
+        ```
+    - For Italian:
+        ```bash
+        python -m spacy download it_core_news_trf
+        ```
+    - For Spanish:
+        ```bash
+        python -m spacy download es_dep_news_trf
+        ```
+    - For French:
+        ```bash
+        python -m spacy download fr_dep_news_trf
+        ```
+
+    If you are not using spacy then skip this step
 
 ## Usage
 
