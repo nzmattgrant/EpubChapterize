@@ -1,7 +1,6 @@
 from glob import glob
 import os
 import re
-from utils.spacy_tools import get_nlp_model
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
@@ -11,6 +10,7 @@ from lxml import etree
 from dataclasses import dataclass
 import syntok.segmenter as segmenter
 import spacy
+import sys
 
 def get_nlp_model(language_code):
     if language_code == 'en':
@@ -40,8 +40,7 @@ class HeaderMatch:
     header_text: str
     header_xpath: str
     nav_item: NavItem
-
-sent_method = "syntok"  # Options: "nltk", "spacy", "syntok"
+sent_method = "nltk"  # Options: "nltk", "spacy", "syntok"
 
 def syntok_segmenter(text):
     sentences = []
@@ -51,9 +50,24 @@ def syntok_segmenter(text):
             sentences.append(sentence)
     return sentences
 
+def get_punkt_tokenizer(langage_code):
+    language_tokenizer_map = {
+        'en': 'tokenizers/punkt/english.pickle',
+        'fr': 'tokenizers/punkt/french.pickle',
+        'de': 'tokenizers/punkt/german.pickle',
+        'es': 'tokenizers/punkt/spanish.pickle',
+        'it': 'tokenizers/punkt/italian.pickle',
+        'nl': 'tokenizers/punkt/dutch.pickle',
+        'pt': 'tokenizers/punkt/portuguese.pickle',
+    }
+    return language_tokenizer_map.get(langage_code, 'tokenizers/punkt/english.pickle')
+
 def get_sent_method(language_code):
     if sent_method == "nltk":
-        return nltk.sent_tokenize
+        tokenizer = nltk.data.load(get_punkt_tokenizer(language_code))
+        def custom_sent_tokenize(text):
+            return tokenizer.tokenize(text)
+        return custom_sent_tokenize
     elif sent_method == "spacy":
         nlp = get_nlp_model(language_code)
         if nlp:
@@ -207,9 +221,11 @@ def parse_epub(file_path):
                 paragraphs = section['paragraphs']
                 sentences = []
                 for paragraph in paragraphs:
-                    transformed_sentences = get_sentences(paragraph.replace(chapter_title, ''))
+                    # Replace all occurrences of chapter_title and newlines in the paragraph
+                    transformed_sentences = get_sentences(paragraph.replace(chapter_title, '').replace('\n', ' '))
                     for sentence in transformed_sentences:
-                        if sentence.strip():  # Check if the sentence is not empty or whitespace
+                        stripped_sentence = sentence.strip()
+                        if stripped_sentence and not all(char in '.,!?;:"\'-()[]{}' for char in stripped_sentence):  # Check if the sentence is not empty, whitespace, or only punctuation
                             sentences.append(sentence)
                 if sentences:
                     chapters.append({
@@ -268,7 +284,7 @@ if __name__ == "__main__":
                 
                 with open(chapter_file_path, "w", encoding="utf-8") as chapter_file:
                     chapter_file.write(chapter["title"] + "\n\n")
-                    chapter_file.write("\n".join(chapter["sentences"]))
+                    chapter_file.write("\n".join(f"<start> {sentence} <end>" for sentence in chapter["sentences"]))
         
 
 
