@@ -264,6 +264,9 @@ if __name__ == "__main__":
         })
 
     output_test_files = True
+    unable_to_parse_file = os.path.join(books_directory, "unable_to_parse.txt")
+    if os.path.exists(unable_to_parse_file):
+        os.remove(unable_to_parse_file)
     for book_to_add in books_to_add:
         if len(sys.argv) > 1:
             input_file_path = sys.argv[1]
@@ -276,6 +279,11 @@ if __name__ == "__main__":
             chapters, language = parse_epub(os.path.join(books_directory, book_to_add["file_path"]))
 
         print("Chapters found:", len(chapters))
+        if not chapters:
+            unable_to_parse_file = os.path.join(books_directory, "unable_to_parse.txt")
+            os.makedirs(os.path.dirname(unable_to_parse_file), exist_ok=True)
+            with open(unable_to_parse_file, "a", encoding="utf-8") as f:
+                f.write(os.path.join(books_directory, book_to_add["file_path"]) + "\n")
         for chapter in chapters:
             print(chapter["title"])
             print(chapter["sentences"][:1])
