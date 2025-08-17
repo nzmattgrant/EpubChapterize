@@ -237,28 +237,32 @@ def parse_epub(file_path):
                     no_sentences_heading += chapter_title + ' '
 
     return chapters, language
+    
 
-    
-books_to_add = []
-books_directory = "books"
-
-for file_path in glob(os.path.join(books_directory, "*.epub")):
-    book = epub.read_epub(file_path)
-    language = book.get_metadata('DC', 'language')
-    language = language[0][0] if language else 'en'
-    
-    title = book.get_metadata('DC', 'title')
-    author = book.get_metadata('DC', 'creator')
-    title = title[0][0] if title else "Unknown Title"
-    author = author[0][0] if author else "Unknown Author"
-    
-    books_to_add.append({
-        'file_path': os.path.basename(file_path),
-        'title': title,
-        'author': author
-    })
 
 if __name__ == "__main__":
+
+    books_to_add = []
+    books_directory = "books"
+
+    for file_path in glob(os.path.join(books_directory, "**", "*.epub"), recursive=True):
+        if "archive" in file_path:  # Include only files in the archive folder
+            continue
+        book = epub.read_epub(file_path)
+        language = book.get_metadata('DC', 'language')
+        language = language[0][0] if language else 'en'
+        
+        title = book.get_metadata('DC', 'title')
+        author = book.get_metadata('DC', 'creator')
+        title = title[0][0] if title else "Unknown Title"
+        author = author[0][0] if author else "Unknown Author"
+        
+        books_to_add.append({
+            'file_path': os.path.relpath(file_path, books_directory),
+            'title': title,
+            'author': author
+        })
+
     output_test_files = True
     for book_to_add in books_to_add:
         if len(sys.argv) > 1:
