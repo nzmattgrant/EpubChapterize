@@ -77,3 +77,6 @@ Homepage = "https://github.com/nzmattgrant/epubchapterize"
 Documentation = "https://github.com/nzmattgrant/epubchapterize/wiki"
 Source = "https://github.com/nzmattgrant/epubchapterize"
 Tracker = "https://github.com/nzmattgrant/epubchapterize/issues"
+
+[project.scripts]   # optional CLI entrypoint
+epub-chapterize = "epub_chapterize.chapterize:parse_epub"
