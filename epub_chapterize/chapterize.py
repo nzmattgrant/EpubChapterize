@@ -11,18 +11,27 @@ from dataclasses import dataclass
 import syntok.segmenter as segmenter
 import spacy
 import sys
+from spacy.util import is_package
+
+
+def load_model(name="en_core_web_sm"):
+    if not is_package(name):
+        raise RuntimeError(
+            f"SpaCy model '{name}' not installed. Run: python -m spacy download {name}"
+        )
+    return spacy.load(name)
 
 def get_nlp_model(language_code):
     if language_code == 'en':
-        return spacy.load('en_core_web_trf')
+        return load_model('en_core_web_trf')
     elif language_code == 'de':
-        return spacy.load('de_dep_news_trf')
+        return load_model('de_dep_news_trf')
     elif language_code == 'it':
-        return spacy.load('it_core_news_trf')
+        return load_model('it_core_news_trf')
     elif language_code == 'es':
-        return spacy.load('es_dep_news_trf')
+        return load_model('es_dep_news_trf')
     elif language_code == 'fr':
-        return spacy.load('fr_dep_news_trf')
+        return load_model('fr_dep_news_trf')
     else:
         return None
 
