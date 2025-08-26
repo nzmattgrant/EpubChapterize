@@ -109,12 +109,17 @@ def get_matched_header_for_nav_item(nav_item: NavItem, book) -> HeaderMatch:
                 headers = [(header, 'h1') for header in h1s] + \
                         [(header, 'h2') for header in h2s] + \
                         [(header, 'h3') for header in h3s]
+                
+                print(f"Found {len(headers)} headers in {doc_href} with element ID: {element_id}")
 
                 best_match = None
                 pattern = generate_header_pattern(nav_label)
+                print(f"Searching for header matching pattern: {pattern.pattern} in {doc_href} with element ID: {element_id}")
                 for header, _ in headers:
-                    header_text = header.get_text(' ', strip=True)
+                    header_text = header.get_text(' ', strip=True).replace('\n', ' ')
+                    print(f"Checking header: {header_text}")
                     if pattern.search(header_text):
+                        print(f"Pattern matched in header: {header_text}")
                         if not best_match or len(header_text) < len(best_match.header_text):
                             def get_xpath(element):
                                 tree = etree.HTML(str(element))
@@ -188,6 +193,7 @@ def parse_epub(file_path):
     matched_candidate_headers: list[HeaderMatch] = []
     for nav_item_info in nav_item_infos:
         matched_candidate_headers.append(get_matched_header_for_nav_item(nav_item_info, book))
+        print(f"Matched header for nav item '{nav_item_info.nav_label}': {matched_candidate_headers[-1]}")
 
     matched_candidate_headers = [candidate_header for candidate_header in matched_candidate_headers if candidate_header is not None]
 
@@ -254,7 +260,7 @@ if __name__ == "__main__":
     books_to_add = []
     books_directory = "books"
 
-    for file_path in glob(os.path.join(books_directory, "**", "*.epub"), recursive=True):
+    for file_path in ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/Pinocchio-IT.epub"]:#glob(os.path.join(books_directory, "**", "*.epub"), recursive=True):
         if "archive" in file_path:  # Include only files in the archive folder
             continue
         book = epub.read_epub(file_path)
