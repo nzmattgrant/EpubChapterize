@@ -212,8 +212,7 @@ def parse_epub(file_path):
                         headers_with_nav_items.append((header, header_match.nav_item))
 
             headers_with_nav_items = filter_by_chapter_class(headers_with_nav_items, book)
-            for header, nav_item in headers_with_nav_items:
-                print(f"Header: {header.get_text(strip=True)}, Nav Item: {nav_item}")
+            print(f"Number of headers with nav items: {len(headers_with_nav_items)}")
 
             sections = []
             for i, combined_header in enumerate(headers_with_nav_items):
@@ -224,11 +223,11 @@ def parse_epub(file_path):
                     continue
                 section = {'title': heading_text, 'paragraphs': []}
                 next_heading = headers_with_nav_items[i + 1] if i + 1 < len(headers_with_nav_items) else None
-                for sibling in header_match.find_next_siblings():
-                    if sibling == next_heading:
-                        break
-                    if sibling.name == 'p':
-                        section['paragraphs'].append(sibling.get_text(separator=" ", strip=True))
+                current_element = header_match
+                while current_element and current_element != next_heading:
+                    if current_element.name == 'p':
+                        section['paragraphs'].append(current_element.get_text(separator=" ", strip=True))
+                    current_element = current_element.find_next()
                 sections.append(section)
 
             no_sentences_heading = ''
