@@ -261,7 +261,8 @@ if __name__ == "__main__":
     books_to_add = []
     books_directory = "books"
 
-    for file_path in ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/Pinocchio-IT.epub"]:#glob(os.path.join(books_directory, "**", "*.epub"), recursive=True):
+    #["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/Röschen-Jaköble-und-andere-kleine-Leute-De.epub"]:
+    for file_path in glob(os.path.join(books_directory, "**", "*.epub"), recursive=True):
         if "archive" in file_path:  # Include only files in the archive folder
             continue
         book = epub.read_epub(file_path)
@@ -304,11 +305,11 @@ if __name__ == "__main__":
             print(chapter["title"])
             print(chapter["sentences"][:1])
             if output_test_files:
-                book_folder = os.path.join("output", book_to_add["title"])
+                book_folder = os.path.join("output", book_to_add["title"][:100])
                 os.makedirs(book_folder, exist_ok=True)
                 print("Book folder created:", book_folder)
                 chapter_number = chapters.index(chapter) + 1
-                chapter_file_path = os.path.join(book_folder, f"{chapter_number} - {chapter['title']}.txt")
+                chapter_file_path = os.path.join(book_folder, f"{chapter_number} - {chapter['title'][:100]}.txt")
                 
                 with open(chapter_file_path, "w", encoding="utf-8") as chapter_file:
                     chapter_file.write(chapter["title"] + "\n\n")
