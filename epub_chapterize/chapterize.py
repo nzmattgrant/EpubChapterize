@@ -176,7 +176,7 @@ def filter_by_chapter_class(combined_header_info: list[tuple[any, NavItem]], boo
     
     return filtered_header_info
 
-def parse_epub(file_path):
+def chapterize(file_path):
     book = epub.read_epub(file_path)
     nav_item_infos = get_nav_items_standard_gutenberg_epub3(file_path)
     language = book.get_metadata('DC', 'language')
@@ -288,12 +288,12 @@ if __name__ == "__main__":
         if len(sys.argv) > 1:
             input_file_path = sys.argv[1]
             if os.path.exists(input_file_path):
-                chapters, language = parse_epub(input_file_path)
+                chapters, language = chapterize(input_file_path)
             else:
                 print(f"File {input_file_path} does not exist. Falling back to default behavior.")
-                chapters, language = parse_epub(os.path.join(books_directory, book_to_add["file_path"]))
+                chapters, language = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
         else:
-            chapters, language = parse_epub(os.path.join(books_directory, book_to_add["file_path"]))
+            chapters, language = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
 
         print("Chapters found:", len(chapters))
         if not chapters:
