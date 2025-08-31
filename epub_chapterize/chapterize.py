@@ -157,26 +157,23 @@ def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
     return nav_items
 
 def filter_by_chapter_class(combined_header_info: list[tuple[any, NavItem]], book) -> list[tuple[any, NavItem]]:
-    for item in book.get_items():
-        if item.get_type() == ebooklib.ITEM_DOCUMENT:
-            soup = BeautifulSoup(item.get_body_content(), 'html.parser')
-            chapter_divs = soup.find_all('div', class_='chapter')
-            if chapter_divs:
-                break
-    else:
-        return combined_header_info
-    
+    found_chapter_divs = False
     filtered_header_info = []
     for header, nav_item in combined_header_info:
         for item in book.get_items():
             if item.get_type() == ebooklib.ITEM_DOCUMENT:
                 soup = BeautifulSoup(item.get_body_content(), 'html.parser')
                 chapter_divs = soup.find_all('div', class_='chapter')
+                if chapter_divs:
+                    found_chapter_divs = True
                 for chapter_div in chapter_divs:
                     if header in chapter_div.descendants:
                         filtered_header_info.append((header, nav_item))
                         break
 
+    if not found_chapter_divs:
+        return combined_header_info
+    
     return filtered_header_info
 
 def parse_epub(file_path):
@@ -197,6 +194,9 @@ def parse_epub(file_path):
 
     matched_candidate_headers = [candidate_header for candidate_header in matched_candidate_headers if candidate_header is not None]
 
+    for matched_header in matched_candidate_headers:
+        print(f"Matched Header: {matched_header.header_text}, XPath: {matched_header.header_xpath}, Nav Label: {matched_header.nav_item.nav_label}")
+    
     for item in book.get_items():
         if item.get_type() == ebooklib.ITEM_DOCUMENT:
             soup = BeautifulSoup(item.get_body_content(), 'html.parser')
@@ -212,6 +212,8 @@ def parse_epub(file_path):
                         headers_with_nav_items.append((header, header_match.nav_item))
 
             headers_with_nav_items = filter_by_chapter_class(headers_with_nav_items, book)
+            for header, nav_item in headers_with_nav_items:
+                print(f"Header: {header.get_text(strip=True)}, Nav Item: {nav_item}")
 
             sections = []
             for i, combined_header in enumerate(headers_with_nav_items):
