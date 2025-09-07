@@ -181,6 +181,19 @@ def chapterize(file_path):
     nav_item_infos = get_nav_items_standard_gutenberg_epub3(file_path)
     language = book.get_metadata('DC', 'language')
     language = language[0][0] if language else 'en'
+
+    # Get title and author metadata
+    title = book.get_metadata('DC', 'title')
+    author = book.get_metadata('DC', 'creator')
+    title = title[0][0] if title else "Unknown Title"
+    author = author[0][0] if author else "Unknown Author"
+
+    # Extract cover image if available
+    cover_item = book.get_item_with_id('cover')
+    cover_image = None
+    if cover_item:
+        cover_image = cover_item.get_content()
+
     if language in nlp_models:
         get_sentences = nlp_models[language]
     else:
@@ -252,7 +265,7 @@ def chapterize(file_path):
                 else:
                     no_sentences_heading += chapter_title + ' '
 
-    return chapters, language
+    return chapters, language, title, author, cover_image
     
 
 
@@ -261,8 +274,9 @@ if __name__ == "__main__":
     books_to_add = []
     books_directory = "books"
 
-    #["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/Röschen-Jaköble-und-andere-kleine-Leute-De.epub"]:
-    for file_path in glob(os.path.join(books_directory, "**", "*.epub"), recursive=True):
+    all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
+    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/Röschen-Jaköble-und-andere-kleine-Leute-De.epub"]
+    for file_path in individual_book:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
         book = epub.read_epub(file_path)
@@ -288,12 +302,12 @@ if __name__ == "__main__":
         if len(sys.argv) > 1:
             input_file_path = sys.argv[1]
             if os.path.exists(input_file_path):
-                chapters, language = chapterize(input_file_path)
+                chapters, language, _, _, _ = chapterize(input_file_path)
             else:
                 print(f"File {input_file_path} does not exist. Falling back to default behavior.")
-                chapters, language = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
+                chapters, language, _, _, _ = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
         else:
-            chapters, language = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
+            chapters, language, _, _, _ = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
 
         print("Chapters found:", len(chapters))
         if not chapters:
