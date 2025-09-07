@@ -190,9 +190,9 @@ def chapterize(file_path):
 
     # Extract cover image if available
     cover_meta = book.get_metadata('OPF', 'cover')
-    cover_id = cover_meta[0][1]['content']
-    cover_item = book.get_item_with_id(cover_id) if cover_meta else None
-    cover_image = None
+    cover_id = cover_meta[0][1].get('content') if cover_meta and len(cover_meta) > 0 and cover_meta[0][1] else None
+    cover_item = book.get_item_with_id(cover_id) if cover_id else None
+    cover_image = cover_item.get_content() if cover_item else None
     if cover_item:
         cover_image = cover_item.get_content()
 
