@@ -189,7 +189,9 @@ def chapterize(file_path):
     author = author[0][0] if author else "Unknown Author"
 
     # Extract cover image if available
-    cover_item = book.get_item_with_id('cover')
+    cover_meta = book.get_metadata('OPF', 'cover')
+    cover_id = cover_meta[0][1]['content']
+    cover_item = book.get_item_with_id(cover_id) if cover_meta else None
     cover_image = None
     if cover_item:
         cover_image = cover_item.get_content()
@@ -302,14 +304,17 @@ if __name__ == "__main__":
         if len(sys.argv) > 1:
             input_file_path = sys.argv[1]
             if os.path.exists(input_file_path):
-                chapters, language, _, _, _ = chapterize(input_file_path)
+                chapters, language, _, _, cover_art = chapterize(input_file_path)
             else:
                 print(f"File {input_file_path} does not exist. Falling back to default behavior.")
-                chapters, language, _, _, _ = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
+                chapters, language, _, _, cover_art = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
         else:
-            chapters, language, _, _, _ = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
+            chapters, language, _, _, cover_art = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
 
         print("Chapters found:", len(chapters))
+        print("Cover art found:", cover_art is not None)
+        if cover_art:
+            print("Cover art size (bytes):", len(cover_art))
         if not chapters:
             unable_to_parse_file = os.path.join(books_directory, "unable_to_parse.txt")
             os.makedirs(os.path.dirname(unable_to_parse_file), exist_ok=True)
