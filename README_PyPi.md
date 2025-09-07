@@ -18,7 +18,7 @@ Here is an example of how to use EpubChapterize:
 import epub_chapterize
 import os
 file_path = os.path.join(os.getcwd(), "Alice-In-Wonderland.epub")
-print(epub_chapterize.chapterize(file_path))
+chapters, language, title, author, cover_image = epub_chapterize.chapterize(file_path)
 ```
 ### Explanation
 
