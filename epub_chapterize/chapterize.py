@@ -89,45 +89,46 @@ def get_sent_method(language_code):
         raise ValueError(f"Unknown sentence segmentation method: {sent_method}")
 
 def get_matched_header_for_nav_item(nav_item: NavItem, book) -> HeaderMatch:
+    print(f"Getting matched header for nav item: {nav_item}")
     nav_label = nav_item.nav_label
     doc_href = nav_item.doc_href
     element_id = nav_item.element_id
     linked_item = book.get_item_with_href(doc_href)
     if linked_item:
         linked_content = linked_item.get_content().decode()
+        #print(linked_content[:500])  # Print the first 500 characters of the linked content for debugging
         linked_soup = BeautifulSoup(linked_content, 'html.parser')  # Parse as HTML
         extracted_text = None
-        if element_id:
-            linked_element = linked_soup.find(id=element_id)
-            if linked_element:
+        print(f"Processing nav item: {nav_label}, doc_href: {doc_href}, element_id: {element_id}")
                 # Extract headers (h1, h2, h3) from the linked content
-                h1s = linked_soup.find_all('h1')
-                h2s = linked_soup.find_all('h2')
-                h3s = linked_soup.find_all('h3')
+        h1s = linked_soup.find_all('h1')
+        h2s = linked_soup.find_all('h2')
+        h3s = linked_soup.find_all('h3')
 
-                # Combine headers into a single list with their tag type
-                headers = [(header, 'h1') for header in h1s] + \
-                        [(header, 'h2') for header in h2s] + \
-                        [(header, 'h3') for header in h3s]
-                
-                print(f"Found {len(headers)} headers in {doc_href} with element ID: {element_id}")
+        # Combine headers into a single list with their tag type
+        headers = [(header, 'h1') for header in h1s] + \
+                [(header, 'h2') for header in h2s] + \
+                [(header, 'h3') for header in h3s]
+        
+        print(f"Found {len(headers)} headers in {doc_href} with element ID: {element_id}")
 
-                best_match = None
-                pattern = generate_header_pattern(nav_label)
-                print(f"Searching for header matching pattern: {pattern.pattern} in {doc_href} with element ID: {element_id}")
-                for header, _ in headers:
-                    header_text = header.get_text(' ', strip=True).replace('\n', ' ')
-                    print(f"Checking header: {header_text}")
-                    if pattern.search(header_text):
-                        print(f"Pattern matched in header: {header_text}")
-                        if not best_match or len(header_text) < len(best_match.header_text):
-                            def get_xpath(element):
-                                tree = etree.HTML(str(element))
-                                return tree.getroottree().getpath(tree)
-                            header_xpath = get_xpath(header)
-                            best_match = HeaderMatch(header, header_text, header_xpath, nav_item)
-                extracted_text = best_match if best_match else None
+        best_match = None
+        pattern = generate_header_pattern(nav_label)
+        print(f"Searching for header matching pattern: {pattern.pattern} in {doc_href} with element ID: {element_id}")
+        for header, _ in headers:
+            header_text = header.get_text(' ', strip=True).replace('\n', ' ')
+            print(f"Checking header: {header_text}")
+            if pattern.search(header_text):
+                print(f"Pattern matched in header: {header_text}")
+                if not best_match or len(header_text) < len(best_match.header_text):
+                    def get_xpath(element):
+                        tree = etree.HTML(str(element))
+                        return tree.getroottree().getpath(tree)
+                    header_xpath = get_xpath(header)
+                    best_match = HeaderMatch(header, header_text, header_xpath, nav_item)
+        extracted_text = best_match if best_match else None
         return extracted_text
+    return None
 
 def generate_header_pattern(target_text):
     words = re.findall(r'\w+', target_text.lower())
@@ -217,7 +218,7 @@ def chapterize(file_path):
             soup = BeautifulSoup(item.get_body_content(), 'html.parser')
 
             current_document_all_headers = []
-            for header_tag in ['h1', 'h2', 'h3']:
+            for header_tag in ['h1', 'h2', 'h3', 'title']:
                 current_document_all_headers.extend(soup.find_all(header_tag))
                 
             headers_with_nav_items = []
@@ -277,7 +278,7 @@ if __name__ == "__main__":
     books_directory = "books"
 
     all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
-    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/Röschen-Jaköble-und-andere-kleine-Leute-De.epub"]
+    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/felix-salten_bambi_whittaker-chambers.epub"]
     for file_path in individual_book:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
