@@ -153,7 +153,7 @@ def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
                     src = content['src']
                     src_parts = src.split('#')
                     doc_href = src_parts[0]
-                    element_id = src_parts[1] if len(src_parts) > 1 else None  # ID within the document
+                    element_id = src_parts[1] if len(src_parts) > 1 else None
                 nav_items.append(NavItem(nav_label, doc_href, element_id))
     return nav_items
 
@@ -279,7 +279,7 @@ if __name__ == "__main__":
 
     all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
     individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/felix-salten_bambi_whittaker-chambers.epub"]
-    for file_path in individual_book:
+    for file_path in all_books:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
         book = epub.read_epub(file_path)
