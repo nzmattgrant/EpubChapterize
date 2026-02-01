@@ -275,13 +275,14 @@ def chapterize(file_path):
 if __name__ == "__main__":
 
     books_to_add = []
-    books_directory = "books"
+    books_directory = "books/to_import"
 
     all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
-    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/felix-salten_bambi_whittaker-chambers.epub"]
+    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/Charles P. Carlton - How to Analyze People with Dark Psychology_ The Secrets to Speed Read People Like a Book, Defend Yourself and Influence Anyone Using Body Language, Persuasion, NLP, and Mind Contr.epub"]
     for file_path in all_books:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
+        print(file_path)
         book = epub.read_epub(file_path)
         language = book.get_metadata('DC', 'language')
         language = language[0][0] if language else 'en'
