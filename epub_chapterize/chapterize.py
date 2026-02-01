@@ -104,11 +104,13 @@ def get_matched_header_for_nav_item(nav_item: NavItem, book) -> HeaderMatch:
         h1s = linked_soup.find_all('h1')
         h2s = linked_soup.find_all('h2')
         h3s = linked_soup.find_all('h3')
+        hgroups = linked_soup.find_all('hgroup')
 
         # Combine headers into a single list with their tag type
         headers = [(header, 'h1') for header in h1s] + \
-                [(header, 'h2') for header in h2s] + \
-                [(header, 'h3') for header in h3s]
+            [(header, 'h2') for header in h2s] + \
+            [(header, 'h3') for header in h3s] + \
+            [(header, 'hgroup') for header in hgroups]
         
         print(f"Found {len(headers)} headers in {doc_href} with element ID: {element_id}")
 
@@ -180,6 +182,11 @@ def filter_by_chapter_class(combined_header_info: list[tuple[any, NavItem]], boo
 def chapterize(file_path):
     book = epub.read_epub(file_path)
     nav_item_infos = get_nav_items_standard_gutenberg_epub3(file_path)
+    print(f"Number of nav items found: {len(nav_item_infos)}")
+    print("Nav Items:")
+    for nav_item in nav_item_infos:
+        print(f" - {nav_item.nav_label}, href: {nav_item.doc_href}, id: {nav_item.element_id}")
+
     language = book.get_metadata('DC', 'language')
     language = language[0][0] if language else 'en'
 
@@ -218,7 +225,7 @@ def chapterize(file_path):
             soup = BeautifulSoup(item.get_body_content(), 'html.parser')
 
             current_document_all_headers = []
-            for header_tag in ['h1', 'h2', 'h3', 'title']:
+            for header_tag in ['h1', 'h2', 'h3', 'title', 'hgroup']:
                 current_document_all_headers.extend(soup.find_all(header_tag))
                 
             headers_with_nav_items = []
@@ -278,8 +285,8 @@ if __name__ == "__main__":
     books_directory = "books/to_import"
 
     all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
-    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/Charles P. Carlton - How to Analyze People with Dark Psychology_ The Secrets to Speed Read People Like a Book, Defend Yourself and Influence Anyone Using Body Language, Persuasion, NLP, and Mind Contr.epub"]
-    for file_path in all_books:
+    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/lewis-carroll_alices-adventures-in-wonderland_john-tenniel.epub"]
+    for file_path in individual_book:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
         print(file_path)
