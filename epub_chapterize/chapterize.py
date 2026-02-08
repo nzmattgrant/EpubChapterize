@@ -197,10 +197,34 @@ def chapterize(file_path):
     author = author[0][0] if author else "Unknown Author"
 
     # Extract cover image if available
+    cover_image = None
+    cover_item = None
+
+    # 1. Try OPF Metadata
     cover_meta = book.get_metadata('OPF', 'cover')
-    cover_id = cover_meta[0][1].get('content') if cover_meta and len(cover_meta) > 0 and cover_meta[0][1] else None
-    cover_item = book.get_item_with_id(cover_id) if cover_id else None
-    cover_image = cover_item.get_content() if cover_item else None
+    if cover_meta and len(cover_meta) > 0 and cover_meta[0][1]:
+        cover_id = cover_meta[0][1].get('content')
+        if cover_id:
+            cover_item = book.get_item_with_id(cover_id)
+
+    # Validate if it's an image
+    if cover_item and cover_item.get_type() not in [ebooklib.ITEM_IMAGE, ebooklib.ITEM_COVER]:
+        cover_item = None
+
+    # 2. Try ITEM_COVER
+    if not cover_item:
+        cover_items = list(book.get_items_of_type(ebooklib.ITEM_COVER))
+        if cover_items:
+            cover_item = cover_items[0]
+
+    # 3. Try ITEM_IMAGE with 'cover' in name/id
+    if not cover_item:
+        for item in book.get_items():
+            if item.get_type() == ebooklib.ITEM_IMAGE:
+                if 'cover' in item.get_name().lower() or 'cover' in item.get_id().lower():
+                    cover_item = item
+                    break
+
     if cover_item:
         cover_image = cover_item.get_content()
 
@@ -286,7 +310,7 @@ if __name__ == "__main__":
 
     all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
     individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/lewis-carroll_alices-adventures-in-wonderland_john-tenniel.epub"]
-    for file_path in individual_book:
+    for file_path in all_books:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
         print(file_path)
@@ -321,9 +345,16 @@ if __name__ == "__main__":
             chapters, language, _, _, cover_art = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
 
         print("Chapters found:", len(chapters))
-        print("Cover art found:", cover_art is not None)
-        if cover_art:
-            print("Cover art size (bytes):", len(cover_art))
+
+        if cover_art is None:
+            raise Exception(f"Cover art not found for {book_to_add['title']}")
+
+        if output_test_files:
+            book_folder = os.path.join("output", book_to_add["title"][:100])
+            os.makedirs(book_folder, exist_ok=True)
+            with open(os.path.join(book_folder, "cover.jpg"), "wb") as cover_file:
+                cover_file.write(cover_art)
+
         if not chapters:
             unable_to_parse_file = os.path.join(books_directory, "unable_to_parse.txt")
             os.makedirs(os.path.dirname(unable_to_parse_file), exist_ok=True)
@@ -342,7 +373,7 @@ if __name__ == "__main__":
                 with open(chapter_file_path, "w", encoding="utf-8") as chapter_file:
                     chapter_file.write(chapter["title"] + "\n\n")
                     chapter_file.write("\n".join(f"<start> {sentence} <end>" for sentence in chapter["sentences"]))
-        
 
 
-    
+
+
