@@ -52,7 +52,7 @@
     "author": "Heinrich Hoffmann",
     "chapter": "1 - Der Struwwelpeter.txt",
     "sentence": "Wenn die Kinder artig sind, kommt zu ihnen das Christkind; wenn sie ihre Suppe essen und das Brot auch nicht vergessen, wenn sie, ohne Lärm zu machen, still sind bei den Siebensachen, beim Spaziergehn auf den Gassen von Mama sich führen lassen, bringt es ihnen Guts genug und ein schönes Bilderbuch.",
-    "sentence_index": -1,
+    "sentence_index": 1,
     "chapter_index": 0
   },
   {
@@ -60,16 +60,16 @@
     "author": "Oswald Spengler",
     "chapter": "1 - DER UNTERGANG DES ABENDLANDES.txt",
     "sentence": "23.–32., UNVERÄNDERTE AUFLAGE",
-    "sentence_index": 5,
-    "chapter_index": 0
+    "sentence_index": 0,
+    "chapter_index": 4
   },
   {
     "title": "Der Weihnachtsabend: Eine Erzählung zum Weihnachtsgeschenke für Kinder",
     "author": "Christoph von Schmid",
     "chapter": "1 - Der Weihnachtsabend..txt",
     "sentence": "Von dem Verfasser der Ostereyer.",
-    "sentence_index": 1,
-    "chapter_index": 0
+    "sentence_index": 0,
+    "chapter_index": 1
   },
   {
     "title": "Die Verwandlung",
@@ -92,15 +92,15 @@
     "author": "Benito Perez Galdos",
     "chapter": "8 - I.txt",
     "sentence": "Cuando el tren mixto descendente número 65 (no es preciso nombrar la línea), se detuvo en la pequeña estación situada entre los kilómetros 171 y 172, casi todos los viajeros de segunda y tercera clase se quedaron durmiendo o bostezando dentro de los coches, porque el frío penetrante de la 5 madrugada no convidadas a pasear por el desamparado andén.",
-    "sentence_index": 2,
-    "chapter_index": 7
+    "sentence_index": 0,
+    "chapter_index": 6
   },
   {
     "title": "Dracula",
     "author": "Bram Stoker",
     "chapter": "1 - I.txt",
     "sentence": "( Kept in shorthand. )",
-    "sentence_index": 1,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
@@ -108,7 +108,7 @@
     "author": "Marcel Proust",
     "chapter": "1 - PREMIÈRE PARTIE COMBRAY.txt",
     "sentence": "Parfois, à peine ma bougie éteinte, mes yeux se fermaient si vite que je n’avais pas le temps de me dire: «Je m’endors.» Et, une demi-heure après, la pensée qu’il était temps de chercher le sommeil m’éveillait; je voulais poser le volume que je croyais avoir encore dans les mains et souffler ma lumière; je n’avais pas cessé en dormant de faire des réflexions sur ce que je venais de lire, mais ces réflexions avaient pris un tour un peu particulier; il me semblait que j’étais moi-même ce dont parlait l’ouvrage: une église, un quatuor, la rivalité de François I er et de Charles Quint.",
-    "sentence_index": 1,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
@@ -116,7 +116,7 @@
     "author": "Pedro Antonio de Alarcon",
     "chapter": "7 - D. JOSÉ SALVADOR DE SALVADOR.txt",
     "sentence": "Dedico esta obra.",
-    "sentence_index": -1,
+    "sentence_index": 0,
     "chapter_index": 6
   },
   {
@@ -125,7 +125,7 @@
     "chapter": "2 - The Fox and the Grapes.txt",
     "sentence": "A hungry Fox saw some fine bunches of Grapes hanging from a vine that was trained along a high trellis, and did his best to reach them by jumping as high as he could into the air.",
     "sentence_index": 0,
-    "chapter_index": 1
+    "chapter_index": 0
   },
   {
     "title": "Faust: Der Tragödie erster Teil",
