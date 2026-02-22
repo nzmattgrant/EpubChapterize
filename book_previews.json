@@ -132,7 +132,7 @@
     "author": "Unknown Author",
     "chapter": "2 - Vorspiel auf dem Theater.txt",
     "sentence": "Ihr beiden, die ihr mir so oft, In Not und Trübsal, beigestanden, Sagt, was ihr wohl in deutschen Landen Von unsrer Unternehmung hofft?",
-    "sentence_index": 4,
+    "sentence_index": 0,
     "chapter_index": 1
   },
   {
@@ -140,7 +140,7 @@
     "author": "Unknown Author",
     "chapter": "1 - FAUST..txt",
     "sentence": "Anmutige Gegend   2.",
-    "sentence_index": 12,
+    "sentence_index": 18,
     "chapter_index": 0
   },
   {
@@ -148,7 +148,7 @@
     "author": "Benito Perez Galdos",
     "chapter": "1 - Fortunata y Jacinta: (dos historias de casadas).txt",
     "sentence": "No cursaban todos el mismo año, y aunque se reunían en la cátedra de Camús, separábanse en la de Derecho Romano: el chico de Santa Cruz era discípulo de Novar, y Villalonga de Coronado.",
-    "sentence_index": 1,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
@@ -181,15 +181,15 @@
     "chapter": "5 - Capitolo I.txt",
     "sentence": "Un tempo i Malavoglia erano stati numerosi come i sassi della strada vecchia di Trezza; ce n'erano persino ad Ognina, e ad Aci Castello, tutti buona e brava gente di mare, proprio all'opposto di quel che sembrava dal nomignolo, come dev'essere.",
     "sentence_index": 0,
-    "chapter_index": 4
+    "chapter_index": 3
   },
   {
     "title": "I promessi sposi. ",
     "author": "Alessandro Manzoni",
     "chapter": "1 - I Promessi Sposi.txt",
     "sentence": "Nato a Milano, sul Naviglio di San Damiano—dalle parti dell'antico corso di Porta Orientale—, il 7 marzo 1785, da Pietro Manzoni, di nobile famiglia originaria di Barzio nella Valsassina in territorio di Lecco, e da Giulia, la giovane figliuola primogenita di Cesare Beccaria, il bambino Alessandro era stato mandato a respirare le prime aure vitali in un casolare a poca distanza dalla villa paterna del Caleotto, a Castello sopra Lecco.",
-    "sentence_index": -1,
-    "chapter_index": 0
+    "sentence_index": 20,
+    "chapter_index": 2
   },
   {
     "title": "Il Milione",
@@ -204,8 +204,8 @@
     "author": "Niccolo Machiavelli",
     "chapter": "4 - Cap. 1: Quot sint genera principatuum et quibus modis acquirantur..txt",
     "sentence": "Tutti li stati, tutti e' dominii che hanno avuto et hanno imperio sopra li uomini, sono stati e sono o repubbliche o principati.",
-    "sentence_index": 1,
-    "chapter_index": 3
+    "sentence_index": 0,
+    "chapter_index": 2
   },
   {
     "title": "Il servitore di due padroni",
@@ -213,15 +213,15 @@
     "chapter": "4 - ATTO PRIMO.txt",
     "sentence": "Camera in casa di Pantalone Pantalone, il Dottore, Clarice, Silvio, Brighella, Smeraldina, un altro Servitore di Pantalone.",
     "sentence_index": 0,
-    "chapter_index": 3
+    "chapter_index": 1
   },
   {
     "title": "La Divina Commedia",
     "author": "Dante Alighieri",
     "chapter": "4 - Inferno.txt",
     "sentence": "Comincia il canto primo de la prima parte la quale si chiama , nel qual l'auttore fa proemio a tutta l'opera.]",
-    "sentence_index": 2,
-    "chapter_index": 3
+    "sentence_index": 0,
+    "chapter_index": 2
   },
   {
     "title": "La Regenta",
@@ -237,15 +237,15 @@
     "chapter": "7 - ATTO PRIMO.txt",
     "sentence": "Sala di locanda.",
     "sentence_index": 0,
-    "chapter_index": 6
+    "chapter_index": 5
   },
   {
     "title": "La mandragola",
     "author": "Niccolo Machiavelli",
     "chapter": "5 - Canzone.txt",
     "sentence": "Perché la vita è brieve e molte son le pene che vivendo e stentando ognun sostiene; dietro alle nostre voglie, andiam passando e consumando gli anni, ché chi il piacer si toglie per viver con angosce e con affanni, non conosce gli inganni del mondo; o da quai mali e da che strani casi oppressi quasi sian tutti i mortali.",
-    "sentence_index": 1,
-    "chapter_index": 4
+    "sentence_index": 0,
+    "chapter_index": 3
   },
   {
     "title": "La vita nuova",
@@ -292,7 +292,7 @@
     "author": "Silvio Pellico",
     "chapter": "2 - Le mie prigioni.txt",
     "sentence": "Erano le tre pomeridiane.",
-    "sentence_index": 2,
+    "sentence_index": 0,
     "chapter_index": 1
   },
   {
@@ -300,8 +300,8 @@
     "author": "Stendhal",
     "chapter": "1 - Le Rouge et le Noir Chronique du XIXe siècle.txt",
     "sentence": "Put thousands together Less bad, But the cage less gay.",
-    "sentence_index": 7,
-    "chapter_index": 0
+    "sentence_index": 0,
+    "chapter_index": 1
   },
   {
     "title": "Les Demi-Vierges",
@@ -309,7 +309,7 @@
     "chapter": "2 - I.txt",
     "sentence": "Tandis que Maud s’asseyait devant le bureau du petit salon et écrivait vivement un télégramme bleu, sa mère, M me de Rouvre, étendue tout près d’elle sur une chaise longue, dans une posture ankylosée de rhumatisante, reprit son roman anglais et se mit à lire.",
     "sentence_index": 0,
-    "chapter_index": 1
+    "chapter_index": 0
   },
   {
     "title": "Les trois mousquetaires",
@@ -324,8 +324,8 @@
     "author": "Gustave Flaubert",
     "chapter": "1 - MADAME BOVARY.txt",
     "sentence": "Permettez-moi d’inscrire votre nom en tête de ce livre et au-dessus même de sa dédicace; car c’est à vous, surtout, que j’en dois la publication.",
-    "sentence_index": 4,
-    "chapter_index": 0
+    "sentence_index": 40,
+    "chapter_index": 1
   },
   {
     "title": "Manon Lescaut",
@@ -372,7 +372,7 @@
     "author": "Herman Melville",
     "chapter": "1 - I: Loomings.txt",
     "sentence": "Some years ago﻿—never mind how long precisely﻿—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
-    "sentence_index": 2,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
@@ -380,8 +380,8 @@
     "author": "Miguel de Unamuno",
     "chapter": "1 - PRÓLOGO.txt",
     "sentence": "Sin haber yo llegado al extremo de escepticismo hamletiano de mi pobre amigo Pérez, que llegó hasta a dudar de su propia existencia, estoy por lo menos firmemente persuadido de que carezco de eso que los psicólogos llaman libre albedrío, aunque para mi consuelo creo también que tampoco goza don Miguel de él.",
-    "sentence_index": 1,
-    "chapter_index": 0
+    "sentence_index": 0,
+    "chapter_index": 2
   },
   {
     "title": "Novelas Cortas",
@@ -404,8 +404,8 @@
     "author": "Juan Valera",
     "chapter": "1 - Pepita Jiménez.txt",
     "sentence": "El rótulo del legajo es la sentencia latina que me sirve de epígrafe, sin el nombre de mujer que yo le doy por título ahora; y tal vez este rótulo haya contribuido a que los papeles se conserven, pues creyéndolos cosa de sermón o de teología, nadie se movió antes que yo a desatar el balduque ni a leer una sola página.",
-    "sentence_index": 1,
-    "chapter_index": 0
+    "sentence_index": 0,
+    "chapter_index": 3
   },
   {
     "title": "Pride and Prejudice",
@@ -420,8 +420,8 @@
     "author": "Antonio Ghislanzoni",
     "chapter": "1 - RACCONTI E NOVELLE.txt",
     "sentence": "Poichè piace al mio ottimo amico Edoardo Sonzogno raccogliere in un solo volume e pubblicare queste mie Novelle da tanti anni disperse e vaganti, io profitto della occasione per sciogliere un debito di riconoscenza.",
-    "sentence_index": 9,
-    "chapter_index": 0
+    "sentence_index": 0,
+    "chapter_index": 7
   },
   {
     "title": "Röschen, Jaköble und andere kleine Leute",
@@ -448,26 +448,18 @@
     "chapter_index": 0
   },
   {
-    "title": "Storia di una capinera",
-    "author": "Unknown Author",
-    "chapter": "3 - Storia di una capinera.txt",
-    "sentence": "Avevo visto una capinera chiusa in gabbia: era timida, triste, malaticcia ci guardava con occhio spaventato; si rifuggiva in un angolo della sua gabbia, e allorché udiva il canto allegro degli altri uccelletti che cinguettavano sul verde del prato o nell'azzurro del cielo, li seguiva con uno sguardo che avrebbe potuto dirsi pieno di lagrime.",
-    "sentence_index": 0,
-    "chapter_index": 2
-  },
-  {
     "title": "The Adventures of Tom Sawyer",
     "author": "Mark Twain",
     "chapter": "1 - I: Tom Plays, Fights, and Hides.txt",
     "sentence": "“What’s gone with that boy, I wonder?",
-    "sentence_index": 7,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
     "title": "The Great Gatsby",
     "author": "F Scott Fitzgerald",
     "chapter": "1 - I.txt",
-    "sentence": "n my younger and more vulnerable years my father gave me some advice that ’ve been turning over in my mind ever since.",
+    "sentence": "In my younger and more vulnerable years my father gave me some advice that I’ve been turning over in my mind ever since.",
     "sentence_index": 0,
     "chapter_index": 0
   },
@@ -476,7 +468,7 @@
     "author": "H G Wells",
     "chapter": "1 - I: The Strange Man’s Arrival.txt",
     "sentence": "The stranger came early in February, one wintry day, through a biting wind and a driving snow, the last snowfall of the year, over the down, walking from Bramblehurst railway station, and carrying a little black portmanteau in his thickly gloved hand.",
-    "sentence_index": 1,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
@@ -484,7 +476,7 @@
     "author": "Hugh Lofting",
     "chapter": "1 - I: Puddleby.txt",
     "sentence": "Once upon a time, many years ago﻿—when our grandfathers were little children﻿—there was a doctor; and his name was Dolittle﻿—John Dolittle, M.D.",
-    "sentence_index": 1,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
@@ -492,7 +484,7 @@
     "author": "Robert Louis Stevenson",
     "chapter": "1 - Story of the Door.txt",
     "sentence": "At friendly meetings, and when the wine was to his taste, something eminently human beaconed from his eye; something indeed which never found its way into his talk, but which spoke not only in these silent symbols of the after-dinner face, but more often and loudly in the acts of his life.",
-    "sentence_index": 1,
+    "sentence_index": 0,
     "chapter_index": 0
   },
   {
@@ -525,7 +517,7 @@
     "chapter": "1 - Prólogo.txt",
     "sentence": "Yo por bien tengo que cosas tan señaladas, y por ventura nunca oídas ni vistas, vengan a noticia de muchos y no se entierren en la sepultura del olvido, pues podría ser que alguno que las lea halle algo que le agrade, y a los que no ahondaren tanto los deleite; y a este propósito dice Plinio que no hay libro, por malo que sea, que no tenga alguna cosa buena; mayormente que los gustos no son todos unos, mas lo que uno no come, otro se pierde por ello.",
     "sentence_index": 0,
-    "chapter_index": 0
+    "chapter_index": 1
   },
   {
     "title": "Wuthering Heights",
@@ -540,7 +532,7 @@
     "author": "Rene Descartes",
     "chapter": "1 - ÉLOGE DE RENÉ DESCARTES,.txt",
     "sentence": "DISCOURS QUI A REMPORTÉ LE PRIX DE L’ACADÉMIE FRANÇAISE EN 1765.",
-    "sentence_index": 1,
-    "chapter_index": 0
+    "sentence_index": 0,
+    "chapter_index": 3
   }
 ]
