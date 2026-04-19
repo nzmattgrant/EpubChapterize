@@ -285,7 +285,7 @@ def chapterize(file_path):
                 sentences = []
                 for paragraph in paragraphs:
                     # Replace all occurrences of chapter_title and newlines in the paragraph
-                    transformed_sentences = get_sentences(paragraph.replace(chapter_title, '').replace('\n', ' '))
+                    transformed_sentences = get_sentences(paragraph.replace('\n', ' '))
                     for sentence in transformed_sentences:
                         stripped_sentence = sentence.strip()
                         if stripped_sentence and not all(char in '.,!?;:"\'-()[]{}' for char in stripped_sentence):  # Check if the sentence is not empty, whitespace, or only punctuation
@@ -309,8 +309,8 @@ if __name__ == "__main__":
     books_directory = "books/to_import"
 
     all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
-    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/lewis-carroll_alices-adventures-in-wonderland_john-tenniel.epub"]
-    for file_path in all_books:
+    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/h-p-lovecraft_at-the-mountains-of-madness.epub"]
+    for file_path in individual_book:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
         print(file_path)

@@ -71,6 +71,34 @@ python chapterize.py
 ```
 which will use the books directory by default
 
+## Example Output
+
+For an input like `bram-stoker_dracula.epub`, the tool creates a folder structure:
+
+```
+output/
+└── Dracula/
+    ├── cover.jpg
+    ├── 1 - Jonathan Harker's Journal.txt
+    ├── 2 - Jonathan Harker's Journal (Continued).txt
+    ├── 3 - Jonathan Harker's Journal (Continued).txt
+    ├── ...
+    └── 27 - Note left by Van Helsing.txt
+```
+
+Each chapter file looks like:
+
+```
+Jonathan Harker's Journal
+
+<start> 3 May. Bistritz.—Left Munich at 8:35 P. M., on 1st May, arriving at Vienna early next morning; should have arrived at 6:46, but train was an hour late. <end>
+<start> Buda-Pesth seems a wonderful place, from the glimpse which I got of it from the train and the little I could walk through the streets. <end>
+<start> I feared to go very far from the station, as we had arrived late and would start as near the correct time as possible. <end>
+<start> The impression I had was that we were leaving the West and entering the East; the most western of splendid bridges over the Danube, which is here of noble width and depth, took us among the traditions of Turkish rule. <end>
+```
+
+Books processed across multiple languages are placed in the same output directory. Any books that could not be parsed are listed in `books/to_import/unable_to_parse.txt`.
+
 ## Notes
 
 - The tool is not perfect and may require manual adjustments to the output.

@@ -1,10 +1,8 @@
 # EpubChapterize
 
-EpubChapterize is a Python package designed to help you split EPUB files into chapters programmatically. It provides a simple interface to process EPUB files and extract their chapters for further use. At the moment this is optimized for Project Gutenberg Epub3s and may not work with other types of Epubs. If it doesn't work then please get in touch with your use case.
+EpubChapterize is a Python package designed to split EPUB files into chapters programmatically. It provides a simple interface to process EPUB files and extract their chapters for further use. Currently optimized for Project Gutenberg EPUB3s — if it doesn't work for your use case please get in touch.
 
 ## Installation
-
-Install the package using pip:
 
 ```bash
 pip install epubchapterize
@@ -12,33 +10,82 @@ pip install epubchapterize
 
 ## Usage
 
-Here is an example of how to use EpubChapterize:
+```python
+from epub_chapterize import chapterize
+
+chapters, language, title, author, cover_image = chapterize("dracula.epub")
+
+print(title)    # "Dracula"
+print(author)   # "Bram Stoker"
+print(language) # "en"
+
+for chapter in chapters:
+    print(chapter["title"])
+    for sentence in chapter["sentences"]:
+        print(sentence)
+```
+
+### Return values
+
+| Value | Type | Description |
+|---|---|---|
+| `chapters` | `list[dict]` | List of chapter dicts, each with `"title"` and `"sentences"` keys |
+| `language` | `str` | BCP 47 language code detected from the EPUB metadata (e.g. `"en"`, `"fr"`) |
+| `title` | `str` | Book title from EPUB metadata |
+| `author` | `str` | Author name from EPUB metadata |
+| `cover_image` | `bytes \| None` | Raw bytes of the cover image, or `None` if not found |
+
+### Example output
+
+For `dracula.epub` the returned `chapters` list looks like:
 
 ```python
-import epub_chapterize
-import os
-file_path = os.path.join(os.getcwd(), "Alice-In-Wonderland.epub")
-chapters, language, title, author, cover_image = epub_chapterize.chapterize(file_path)
+[
+    {
+        "title": "Jonathan Harker's Journal",
+        "sentences": [
+            "3 May. Bistritz.—Left Munich at 8:35 P. M., on 1st May, arriving at Vienna early next morning; should have arrived at 6:46, but train was an hour late.",
+            "Buda-Pesth seems a wonderful place, from the glimpse which I got of it from the train and the little I could walk through the streets.",
+            "I feared to go very far from the station, as we had arrived late and would start as near the correct time as possible.",
+            "The impression I had was that we were leaving the West and entering the East; the most western of splendid bridges over the Danube, which is here of noble width and depth, took us among the traditions of Turkish rule."
+        ]
+    },
+    {
+        "title": "Jonathan Harker's Journal (Continued)",
+        "sentences": [
+            "5 May.—I must have been asleep, for certainly if I had been fully awake I must have noticed the approach of such a remarkable place.",
+            "In the gloom the courtyard looked of considerable size, and as several dark ways led from it under great round arches, it perhaps seemed bigger than it really is.",
+            ...
+        ]
+    },
+    ...
+]
 ```
-### Explanation
 
-1. Import the `epub_chapterize` module.
-2. Specify the path to your EPUB file.
-3. Use the `chapterize` function to process the file and extract its chapters.
+The `cover_image` bytes can be written straight to a file:
+
+```python
+if cover_image:
+    with open("cover.jpg", "wb") as f:
+        f.write(cover_image)
+```
+
+## Supported languages
+
+Sentence segmentation is supported for English, French, German, Spanish, Italian, Dutch, and Portuguese via NLTK's Punkt tokenizer (installed automatically). No extra downloads are required unless you switch to the spaCy backend.
 
 ## Requirements
 
 - Python 3.13 or higher
-- `epub_chapterize` package installed via pip
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+MIT — see the LICENSE file for details.
 
 ## Contributing
 
-Contributions are welcome! Feel free to submit issues or pull requests to improve the package.
+Contributions are welcome! Feel free to submit issues or pull requests at [github.com/nzmattgrant/epubchapterize](https://github.com/nzmattgrant/epubchapterize).
 
 ## Author
 
-Matthew Grant  
+Matthew Grant
