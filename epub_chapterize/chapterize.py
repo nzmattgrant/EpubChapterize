@@ -244,8 +244,11 @@ def chapterize(file_path):
     for matched_header in matched_candidate_headers:
         print(f"Matched Header: {matched_header.header_text}, XPath: {matched_header.header_xpath}, Nav Label: {matched_header.nav_item.nav_label}")
     
-    for item in book.get_items():
-        if item.get_type() == ebooklib.ITEM_DOCUMENT:
+    spine_ids = [item_id for item_id, _ in book.spine]
+    spine_items = [book.get_item_with_id(item_id) for item_id in spine_ids]
+    all_items = spine_items + [item for item in book.get_items() if item not in spine_items]
+    for item in all_items:
+        if item and item.get_type() == ebooklib.ITEM_DOCUMENT:
             soup = BeautifulSoup(item.get_body_content(), 'html.parser')
 
             current_document_all_headers = []
@@ -309,7 +312,7 @@ if __name__ == "__main__":
     books_directory = "books/to_import"
 
     all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
-    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/english/h-p-lovecraft_at-the-mountains-of-madness.epub"]
+    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/german/Remarque.epub"]
     for file_path in individual_book:
         if "archive" in file_path:  # Include only files in the archive folder
             continue
