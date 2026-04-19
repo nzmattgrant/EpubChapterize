@@ -1,6 +1,8 @@
 # EpubChapterize
 ### A tool to split out chapters from ePub documents. Initially just for Project Gutenberg ePub3s.
 
+[![PyPI version](https://img.shields.io/pypi/v/epubchapterize.svg)](https://pypi.org/project/epubchapterize/)
+
 ## Setup
 
 To set up the project, follow these steps:
