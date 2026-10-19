@@ -1,12 +1,12 @@
 from glob import glob
 import os
 import re
+import unicodedata
 import ebooklib
 from ebooklib import epub
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 import nltk
 nltk.download('punkt_tab')
-from lxml import etree
 from dataclasses import dataclass
 import syntok.segmenter as segmenter
 import spacy
@@ -42,13 +42,15 @@ class NavItem:
     nav_label: str
     doc_href: str
     element_id: str
+    parent_label: str = None
 
 @dataclass
 class HeaderMatch:
     header: object
     header_text: str
-    header_xpath: str
     nav_item: NavItem
+
+HEADER_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hgroup']
 sent_method = "nltk"  # Options: "nltk", "spacy", "syntok"
 
 def syntok_segmenter(text):
@@ -88,54 +90,54 @@ def get_sent_method(language_code):
     else:
         raise ValueError(f"Unknown sentence segmentation method: {sent_method}")
 
-def get_matched_header_for_nav_item(nav_item: NavItem, book) -> HeaderMatch:
+def get_matched_header_for_nav_item(nav_item: NavItem, book, soups) -> HeaderMatch:
     print(f"Getting matched header for nav item: {nav_item}")
-    nav_label = nav_item.nav_label
-    doc_href = nav_item.doc_href
-    element_id = nav_item.element_id
-    linked_item = book.get_item_with_href(doc_href)
-    if linked_item:
-        linked_content = linked_item.get_content().decode()
-        #print(linked_content[:500])  # Print the first 500 characters of the linked content for debugging
-        linked_soup = BeautifulSoup(linked_content, 'html.parser')  # Parse as HTML
-        extracted_text = None
-        print(f"Processing nav item: {nav_label}, doc_href: {doc_href}, element_id: {element_id}")
-                # Extract headers (h1, h2, h3) from the linked content
-        h1s = linked_soup.find_all('h1')
-        h2s = linked_soup.find_all('h2')
-        h3s = linked_soup.find_all('h3')
-        hgroups = linked_soup.find_all('hgroup')
+    linked_soup = soups.get(book.get_item_with_href(nav_item.doc_href))
+    if not linked_soup:
+        return None
+    anchor = linked_soup.find(id=nav_item.element_id) if nav_item.element_id else None
+    # A contents entry that links to a header, into one, or to a place before one names the first such header,
+    # even when its label doesn't match, like "-I- Juanito Santa Cruz -i-" for a heading split over three h2s
+    linked_header = anchor and (anchor if anchor.name in HEADER_TAGS else anchor.find_parent(HEADER_TAGS) or anchor.find_next(HEADER_TAGS))
+    if linked_header:
+        return HeaderMatch(linked_header, linked_header.get_text(' ', strip=True), nav_item)
+    pattern = generate_header_pattern(nav_item.nav_label)
+    # Otherwise match the label and take the shortest match, as a label like "I" also matches any longer header containing an i
+    matches = [HeaderMatch(header, header.get_text(' ', strip=True), nav_item) for header in linked_soup.find_all(HEADER_TAGS)]
+    matches = [match for match in matches if pattern.search(match.header_text)]
+    print(f"Headers in {nav_item.doc_href} matching {pattern.pattern}: {[match.header_text for match in matches]}")
+    return min(matches, key=lambda match: len(match.header_text), default=None)
 
-        # Combine headers into a single list with their tag type
-        headers = [(header, 'h1') for header in h1s] + \
-            [(header, 'h2') for header in h2s] + \
-            [(header, 'h3') for header in h3s] + \
-            [(header, 'hgroup') for header in hgroups]
-        
-        print(f"Found {len(headers)} headers in {doc_href} with element ID: {element_id}")
+# EPUB 3 epub:type markers for footnote references, note backlinks and page numbers
+APPARATUS_SEMANTICS = {'noteref', 'backlink', 'pagebreak'}
+# Classes Project Gutenberg books use for line numbers
+APPARATUS_CLASSES = {'linenum', 'side'}
 
-        best_match = None
-        pattern = generate_header_pattern(nav_label)
-        print(f"Searching for header matching pattern: {pattern.pattern} in {doc_href} with element ID: {element_id}")
-        for header, _ in headers:
-            header_text = header.get_text(' ', strip=True).replace('\n', ' ')
-            print(f"Checking header: {header_text}")
-            if pattern.search(header_text):
-                print(f"Pattern matched in header: {header_text}")
-                if not best_match or len(header_text) < len(best_match.header_text):
-                    def get_xpath(element):
-                        tree = etree.HTML(str(element))
-                        return tree.getroottree().getpath(tree)
-                    header_xpath = get_xpath(header)
-                    best_match = HeaderMatch(header, header_text, header_xpath, nav_item)
-        extracted_text = best_match if best_match else None
-        return extracted_text
-    return None
+def is_apparatus(element):
+    if APPARATUS_SEMANTICS.intersection(element.get('epub:type', '').split()) or APPARATUS_CLASSES.intersection(element.get('class', [])):
+        return True
+    if element.name == 'a' and element.has_attr('href'):
+        # Links that are note markers rather than prose: superscripted, or wrapped in brackets like [1], {a} or [Torna]
+        text = element.get_text().strip()
+        return (element.find_parent('sup') is not None or element.find('sup') is not None
+                or (len(text) > 1 and unicodedata.category(text[0]) == 'Ps' and unicodedata.category(text[-1]) == 'Pe'))
+    return False
+
+def get_displayed_text(element):
+    # Inline tags join their text directly, line breaks separate it, and apparatus is left out
+    parts = []
+    for child in element.children:
+        if isinstance(child, Tag) and not is_apparatus(child):
+            parts.append(' ' if child.name == 'br' else get_displayed_text(child))
+        elif type(child) in Tag.MAIN_CONTENT_STRING_TYPES:
+            parts.append(str(child))
+    return ''.join(parts)
 
 def generate_header_pattern(target_text):
     words = re.findall(r'\w+', target_text.lower())
     pattern = r'.*'.join(re.escape(word) for word in words)
-    return re.compile(pattern, re.IGNORECASE)
+    # DOTALL so the words also match across line breaks inside a header
+    return re.compile(pattern, re.IGNORECASE | re.DOTALL)
 
 def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
     book = epub.read_epub(file_path)
@@ -156,28 +158,10 @@ def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
                     src_parts = src.split('#')
                     doc_href = src_parts[0]
                     element_id = src_parts[1] if len(src_parts) > 1 else None
-                nav_items.append(NavItem(nav_label, doc_href, element_id))
+                parent = navpoint.find_parent('navPoint')
+                parent_label = parent.find('navLabel').find("text").get_text(strip=True) if parent else None
+                nav_items.append(NavItem(nav_label, doc_href, element_id, parent_label))
     return nav_items
-
-def filter_by_chapter_class(combined_header_info: list[tuple[any, NavItem]], book) -> list[tuple[any, NavItem]]:
-    found_chapter_divs = False
-    filtered_header_info = []
-    for header, nav_item in combined_header_info:
-        for item in book.get_items():
-            if item.get_type() == ebooklib.ITEM_DOCUMENT:
-                soup = BeautifulSoup(item.get_body_content(), 'html.parser')
-                chapter_divs = soup.find_all('div', class_='chapter')
-                if chapter_divs:
-                    found_chapter_divs = True
-                for chapter_div in chapter_divs:
-                    if header in chapter_div.descendants:
-                        filtered_header_info.append((header, nav_item))
-                        break
-
-    if not found_chapter_divs:
-        return combined_header_info
-    
-    return filtered_header_info
 
 def chapterize(file_path):
     book = epub.read_epub(file_path)
@@ -234,73 +218,89 @@ def chapterize(file_path):
         get_sentences = get_sent_method(language)
         nlp_models[language] = get_sentences
     chapters = []
+    # Parse each document once, so matched headers can be found again by identity; get_body_content() is always UTF-8
+    soups = {item: BeautifulSoup(item.get_body_content(), 'html.parser', from_encoding='utf-8') for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT)}
     matched_candidate_headers: list[HeaderMatch] = []
     for nav_item_info in nav_item_infos:
-        matched_candidate_headers.append(get_matched_header_for_nav_item(nav_item_info, book))
+        matched_candidate_headers.append(get_matched_header_for_nav_item(nav_item_info, book, soups))
         print(f"Matched header for nav item '{nav_item_info.nav_label}': {matched_candidate_headers[-1]}")
 
     matched_candidate_headers = [candidate_header for candidate_header in matched_candidate_headers if candidate_header is not None]
 
     for matched_header in matched_candidate_headers:
-        print(f"Matched Header: {matched_header.header_text}, XPath: {matched_header.header_xpath}, Nav Label: {matched_header.nav_item.nav_label}")
-    
+        print(f"Matched Header: {matched_header.header_text}, Nav Label: {matched_header.nav_item.nav_label}")
+
     spine_ids = [item_id for item_id, _ in book.spine]
     spine_items = [book.get_item_with_id(item_id) for item_id in spine_ids]
     all_items = spine_items + [item for item in book.get_items() if item not in spine_items]
+    # Each matched header's contents entries, in contents order
+    nav_items_by_header = {}
+    for match in matched_candidate_headers:
+        nav_items_by_header.setdefault(id(match.header), []).append(match.nav_item)
+
+    # Read the documents in order as one text, so a chapter runs from its header to the next chapter's header even when
+    # that is in a later file, but doesn't run on into files outside the reading order
+    sections = []
+    section = None
     for item in all_items:
-        if item and item.get_type() == ebooklib.ITEM_DOCUMENT:
-            soup = BeautifulSoup(item.get_body_content(), 'html.parser')
-
-            current_document_all_headers = []
-            for header_tag in ['h1', 'h2', 'h3', 'title', 'hgroup']:
-                current_document_all_headers.extend(soup.find_all(header_tag))
-                
-            headers_with_nav_items = []
-            for header in current_document_all_headers:
-                for header_match in matched_candidate_headers:
-                    if str(header_match.header) == str(header):
-                        headers_with_nav_items.append((header, header_match.nav_item))
-
-            headers_with_nav_items = filter_by_chapter_class(headers_with_nav_items, book)
-            print(f"Number of headers with nav items: {len(headers_with_nav_items)}")
-
-            sections = []
-            for i, combined_header in enumerate(headers_with_nav_items):
-                header_match = combined_header[0]
-                nav_item_info = combined_header[1]
-                heading_text = nav_item_info.nav_label
-                if "THE FULL PROJECT GUTENBERG LICENSE" in heading_text:
-                    continue
-                section = {'title': heading_text, 'paragraphs': []}
-                next_heading = headers_with_nav_items[i + 1] if i + 1 < len(headers_with_nav_items) else None
-                current_element = header_match
-                while current_element and current_element != next_heading:
-                    if current_element.name == 'p':
-                        section['paragraphs'].append(current_element.get_text(separator=" ", strip=True))
-                    current_element = current_element.find_next()
+        if item not in soups:
+            continue
+        if item not in spine_items:
+            section = None
+        for element in soups[item].find_all(True):
+            for nav_item in nav_items_by_header.get(id(element), []):
+                section = {'nav_item': nav_item, 'item': item, 'paragraphs': []}
                 sections.append(section)
+            if element.name == 'p' and section:
+                # Drop invisible formatting characters, such as the zero-width no-break spaces before em dashes and soft hyphens,
+                # which only control line breaking
+                paragraph_text = ''.join(char for char in get_displayed_text(element) if unicodedata.category(char) != 'Cf')
+                # Collapse all whitespace, including no-break and hair spaces, into ordinary spaces
+                section['paragraphs'].append(' '.join(paragraph_text.split()))
 
+    # The parent entries each label appears under; some contents also repeat every entry at the top level, without a parent
+    parent_labels = {}
+    for nav_item in nav_item_infos:
+        if nav_item.parent_label:
+            parent_labels.setdefault(nav_item.nav_label, set()).add(nav_item.parent_label)
+    no_sentences_heading = ''
+    for i, section in enumerate(sections):
+        nav_item = section['nav_item']
+        if "THE FULL PROJECT GUTENBERG LICENSE" in nav_item.nav_label:
+            continue
+        # Headings without text only lead into the next chapter's title within their own file
+        if i and section['item'] is not sections[i - 1]['item']:
             no_sentences_heading = ''
-            for section in sections:
-                chapter_title = no_sentences_heading + section['title']
-                chapter_title = chapter_title.replace('\n', ' ')
-                paragraphs = section['paragraphs']
-                sentences = []
-                for paragraph in paragraphs:
-                    # Replace all occurrences of chapter_title and newlines in the paragraph
-                    transformed_sentences = get_sentences(paragraph.replace('\n', ' '))
-                    for sentence in transformed_sentences:
-                        stripped_sentence = sentence.strip()
-                        if stripped_sentence and not all(char in '.,!?;:"\'-()[]{}' for char in stripped_sentence):  # Check if the sentence is not empty, whitespace, or only punctuation
-                            sentences.append(sentence)
-                if sentences:
-                    chapters.append({
-                        'title': chapter_title,
-                        'sentences': [s.strip() for s in sentences]
-                    })
-                    no_sentences_heading = ''
-                else:
-                    no_sentences_heading += chapter_title + ' '
+        label = nav_item.nav_label
+        # A label that is only a number, like "2.", or that the contents repeat under different entries, like "Scene II" in every act,
+        # is named after its parent entry, unless that entry's heading already leads into this chapter
+        is_ambiguous = len(parent_labels.get(label, ())) > 1 or not any(char.isalpha() for char in label)
+        if is_ambiguous and nav_item.parent_label and nav_item.parent_label not in no_sentences_heading:
+            label = f'{nav_item.parent_label} {label}'
+        chapter_title = (no_sentences_heading + label).replace('\n', ' ')
+        sentences = []
+        for paragraph in section['paragraphs']:
+            # Paragraphs without any words, such as * * * scene breaks, are left out
+            if not re.search(r'\w', paragraph):
+                continue
+            paragraph_sentences = []
+            for sentence in get_sentences(paragraph):
+                sentence = sentence.strip()
+                # Keep fragments without words, like an opening »... or a closing …” split off by the tokenizer, with the sentence beside them
+                if paragraph_sentences and not (re.search(r'\w', paragraph_sentences[-1]) and re.search(r'\w', sentence)):
+                    paragraph_sentences[-1] = f'{paragraph_sentences[-1]} {sentence}'.strip()
+                elif sentence:
+                    paragraph_sentences.append(sentence)
+            sentences.extend(paragraph_sentences)
+        if sentences:
+            chapters.append({
+                'title': chapter_title,
+                'sentences': sentences
+            })
+            no_sentences_heading = ''
+        else:
+            # chapter_title already starts with the earlier empty headings' titles
+            no_sentences_heading = chapter_title + ' '
 
     return chapters, language, title, author, cover_image
     
