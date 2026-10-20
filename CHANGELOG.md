@@ -1,3 +1,7 @@
+2026.10.19 - v0.3.1
+
+- Fixed the `epub-chapterize` command, which pointed at a function that didn't exist. `epub-chapterize book.epub` (or a folder of EPUBs) now writes each book's cover and one numbered text file per chapter to output/<book title>/
+
 2026.10.19 - v0.3.0
 
 - Fixed chapters running on to the end of their file, which repeated every later chapter's text (some books came out several times longer than they are)

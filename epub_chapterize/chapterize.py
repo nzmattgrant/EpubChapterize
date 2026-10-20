@@ -1,4 +1,4 @@
-from glob import glob
+from glob import glob, escape as glob_escape
 import os
 import re
 import unicodedata
@@ -306,76 +306,39 @@ def chapterize(file_path):
     
 
 
-if __name__ == "__main__":
-
-    books_to_add = []
-    books_directory = "books/to_import"
-
-    all_books = glob(os.path.join(books_directory, "**", "*.epub"), recursive=True)
-    individual_book = ["/Users/matthewgrant/Source/EpubChapterize/epub_chapterize/books/to_import/german/Remarque.epub"]
-    for file_path in individual_book:
-        if "archive" in file_path:  # Include only files in the archive folder
-            continue
-        print(file_path)
-        book = epub.read_epub(file_path)
-        language = book.get_metadata('DC', 'language')
-        language = language[0][0] if language else 'en'
-        
-        title = book.get_metadata('DC', 'title')
-        author = book.get_metadata('DC', 'creator')
-        title = title[0][0] if title else "Unknown Title"
-        author = author[0][0] if author else "Unknown Author"
-        
-        books_to_add.append({
-            'file_path': os.path.relpath(file_path, books_directory),
-            'title': title,
-            'author': author
-        })
-
-    output_test_files = True
-    unable_to_parse_file = os.path.join(books_directory, "unable_to_parse.txt")
+def main():
+    # epub-chapterize [EPUB FILE OR FOLDER, default books/to_import] writes each book's cover and chapters to output/<book title>/,
+    # one numbered text file per chapter, and lists books with no chapters in unable_to_parse.txt next to the input
+    path = sys.argv[1] if len(sys.argv) > 1 else "books/to_import"
+    file_paths = [path] if path.endswith(".epub") else sorted(glob(os.path.join(path, "**", "*.epub"), recursive=True))
+    if not file_paths or not os.path.exists(file_paths[0]):
+        sys.exit(f"No EPUB files found at {path}")
+    unable_to_parse_file = os.path.join(os.path.dirname(path) if path.endswith(".epub") else path, "unable_to_parse.txt")
     if os.path.exists(unable_to_parse_file):
         os.remove(unable_to_parse_file)
-    for book_to_add in books_to_add:
-        if len(sys.argv) > 1:
-            input_file_path = sys.argv[1]
-            if os.path.exists(input_file_path):
-                chapters, language, _, _, cover_art = chapterize(input_file_path)
-            else:
-                print(f"File {input_file_path} does not exist. Falling back to default behavior.")
-                chapters, language, _, _, cover_art = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
-        else:
-            chapters, language, _, _, cover_art = chapterize(os.path.join(books_directory, book_to_add["file_path"]))
-
-        print("Chapters found:", len(chapters))
-
-        if cover_art is None:
-            raise Exception(f"Cover art not found for {book_to_add['title']}")
-
-        if output_test_files:
-            book_folder = os.path.join("output", book_to_add["title"][:100])
-            os.makedirs(book_folder, exist_ok=True)
+    for file_path in file_paths:
+        chapters, _, title, _, cover_image = chapterize(file_path)
+        print(f"{file_path}: {len(chapters)} chapters")
+        # File names can't contain a slash, which a title can
+        book_folder = os.path.join("output", title[:100].replace('/', '-'))
+        os.makedirs(book_folder, exist_ok=True)
+        # Chapter numbering can change between runs, so clear out the book's earlier chapter files
+        for old_chapter_file in glob(os.path.join(glob_escape(book_folder), "*.txt")):
+            os.remove(old_chapter_file)
+        if cover_image:
             with open(os.path.join(book_folder, "cover.jpg"), "wb") as cover_file:
-                cover_file.write(cover_art)
-
+                cover_file.write(cover_image)
         if not chapters:
-            unable_to_parse_file = os.path.join(books_directory, "unable_to_parse.txt")
-            os.makedirs(os.path.dirname(unable_to_parse_file), exist_ok=True)
-            with open(unable_to_parse_file, "a", encoding="utf-8") as f:
-                f.write(os.path.join(books_directory, book_to_add["file_path"]) + "\n")
-        for chapter in chapters:
-            print(chapter["title"])
-            print(chapter["sentences"][:1])
-            if output_test_files:
-                book_folder = os.path.join("output", book_to_add["title"][:100])
-                os.makedirs(book_folder, exist_ok=True)
-                print("Book folder created:", book_folder)
-                chapter_number = chapters.index(chapter) + 1
-                chapter_file_path = os.path.join(book_folder, f"{chapter_number} - {chapter['title'][:100]}.txt")
-                
-                with open(chapter_file_path, "w", encoding="utf-8") as chapter_file:
-                    chapter_file.write(chapter["title"] + "\n\n")
-                    chapter_file.write("\n".join(f"<start> {sentence} <end>" for sentence in chapter["sentences"]))
+            with open(unable_to_parse_file, "a", encoding="utf-8") as unable_file:
+                unable_file.write(file_path + "\n")
+        for number, chapter in enumerate(chapters, 1):
+            with open(os.path.join(book_folder, f"{number} - {chapter['title'][:100].replace('/', '-')}.txt"), "w", encoding="utf-8") as chapter_file:
+                chapter_file.write(chapter["title"] + "\n\n")
+                chapter_file.write("\n".join(f"<start> {sentence} <end>" for sentence in chapter["sentences"]))
+
+
+if __name__ == "__main__":
+    main()
 
 
 

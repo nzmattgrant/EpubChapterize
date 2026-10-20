@@ -6,11 +6,12 @@ import os
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 from ebooklib import epub
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from epub_chapterize.chapterize import chapterize
+from epub_chapterize.chapterize import chapterize, main
 
 
 def contents_links(toc, ids=None):
@@ -107,6 +108,17 @@ class ChapterizeTest(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 _, language, title, author, _ = chapterize(path)
         self.assertEqual((language, title, author), ('en', 'Test Book', 'Test Author'))
+
+    def test_command_writes_a_numbered_file_per_chapter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            files = {'text.xhtml': '<h2 id="a">Before/After</h2><p>One.</p><h2 id="b">Two</h2><p>Two.</p>'}
+            write_epub(os.path.join(directory, 'book.epub'), files, [('text.xhtml#a', 'Before/After'), ('text.xhtml#b', 'Two')])
+            with contextlib.chdir(directory), unittest.mock.patch.object(sys, 'argv', ['epub-chapterize', 'book.epub']), contextlib.redirect_stdout(io.StringIO()):
+                main()
+            book_folder = os.path.join(directory, 'output', 'Test Book')
+            self.assertEqual(sorted(os.listdir(book_folder)), ['1 - Before-After.txt', '2 - Two.txt'])
+            with open(os.path.join(book_folder, '1 - Before-After.txt'), encoding='utf-8') as chapter_file:
+                self.assertEqual(chapter_file.read(), 'Before/After\n\n<start> One. <end>')
 
     def test_chapters_continue_into_the_next_file(self):
         files = {'one.xhtml': '<h2 id="a">I</h2><p>Start of one.</p>',
