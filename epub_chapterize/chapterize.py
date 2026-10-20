@@ -251,7 +251,8 @@ def chapterize(file_path):
             for nav_item in nav_items_by_header.get(id(element), []):
                 section = {'nav_item': nav_item, 'item': item, 'paragraphs': []}
                 sections.append(section)
-            if element.name == 'p' and section:
+            # A paragraph inside a heading, like the subtitle in <hgroup><h2>I</h2><p>Loomings</p></hgroup>, is part of the heading
+            if element.name == 'p' and section and not element.find_parent(HEADER_TAGS):
                 # Drop invisible formatting characters, such as the zero-width no-break spaces before em dashes and soft hyphens,
                 # which only control line breaking
                 paragraph_text = ''.join(char for char in get_displayed_text(element) if unicodedata.category(char) != 'Cf')

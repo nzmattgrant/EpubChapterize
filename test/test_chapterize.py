@@ -146,6 +146,10 @@ class ChapterizeTest(unittest.TestCase):
         toc = [('text.xhtml#a', 'Part One'), ('text.xhtml#b', 'Book One'), ('text.xhtml#c', 'I')]
         self.assertEqual(chapterize_files(files, toc), [('Part One Book One I', ['Text.'])])
 
+    def test_subtitles_in_heading_groups_are_part_of_the_heading(self):
+        files = {'text.xhtml': '<hgroup id="a"><h2>I</h2><p>Loomings</p></hgroup><p>Call me Ishmael.</p>'}
+        self.assertEqual(chapterize_files(files, [('text.xhtml#a', 'I: Loomings')]), [('I: Loomings', ['Call me Ishmael.'])])
+
     def test_headings_outside_chapter_divs_are_kept(self):
         files = {'one.xhtml': '<div class="chapter"><h2 id="a">One</h2><p>First.</p></div>',
                  'two.xhtml': '<h2 id="b">Two</h2><p>Second.</p>'}

@@ -1,3 +1,7 @@
+2026.10.20 - v0.3.2
+
+- Subtitles inside a heading group, like "Loomings" in `<hgroup><h2>I</h2><p>Loomings</p></hgroup>`, are part of the heading, so they no longer repeat the chapter title as its first sentence. Title pages and part headings that only held a subtitle are no longer chapters
+
 2026.10.19 - v0.3.1
 
 - Fixed the `epub-chapterize` command, which pointed at a function that didn't exist. `epub-chapterize book.epub` (or a folder of EPUBs) now writes each book's cover and one numbered text file per chapter to output/<book title>/
