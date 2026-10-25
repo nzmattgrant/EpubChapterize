@@ -1,3 +1,7 @@
+2026.10.25 - v0.4.0
+
+- Each chapter records where it starts in the EPUB (`href`, like `"OEBPS/chapter-1.xhtml#heading"`) and which of the EPUB's files each of its sentences is in (`sentence_hrefs`, in the same order as `sentences`), so a reader showing the EPUB can find a chapter's text. The paths are from the root of the EPUB and are URLs, as readers such as Readium name the files
+
 2026.10.20 - v0.3.2
 
 - Subtitles inside a heading group, like "Loomings" in `<hgroup><h2>I</h2><p>Loomings</p></hgroup>`, are part of the heading, so they no longer repeat the chapter title as its first sentence. Title pages and part headings that only held a subtitle are no longer chapters

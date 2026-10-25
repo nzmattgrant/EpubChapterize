@@ -1,7 +1,9 @@
 from glob import glob, escape as glob_escape
 import os
+import posixpath
 import re
 import unicodedata
+from urllib.parse import quote
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup, Tag
@@ -163,8 +165,17 @@ def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
                 nav_items.append(NavItem(nav_label, doc_href, element_id, parent_label))
     return nav_items
 
+def get_href(opf_dir, item, element_id=None):
+    # The item's path from the root of the EPUB as a URL, which is how readers such as Readium name it;
+    # ebooklib's item names are decoded and relative to the package file
+    href = quote(posixpath.join(opf_dir, item.get_name()))
+    return f'{href}#{element_id}' if element_id else href
+
 def chapterize(file_path):
-    book = epub.read_epub(file_path)
+    # As epub.read_epub, keeping the reader for the package file's folder
+    reader = epub.EpubReader(file_path)
+    book = reader.load()
+    reader.process()
     nav_item_infos = get_nav_items_standard_gutenberg_epub3(file_path)
     print(f"Number of nav items found: {len(nav_item_infos)}")
     print("Nav Items:")
@@ -257,7 +268,7 @@ def chapterize(file_path):
                 # which only control line breaking
                 paragraph_text = ''.join(char for char in get_displayed_text(element) if unicodedata.category(char) != 'Cf')
                 # Collapse all whitespace, including no-break and hair spaces, into ordinary spaces
-                section['paragraphs'].append(' '.join(paragraph_text.split()))
+                section['paragraphs'].append((item, ' '.join(paragraph_text.split())))
 
     # The parent entries each label appears under; some contents also repeat every entry at the top level, without a parent
     parent_labels = {}
@@ -265,6 +276,7 @@ def chapterize(file_path):
         if nav_item.parent_label:
             parent_labels.setdefault(nav_item.nav_label, set()).add(nav_item.parent_label)
     no_sentences_heading = ''
+    no_sentences_href = None
     for i, section in enumerate(sections):
         nav_item = section['nav_item']
         if "THE FULL PROJECT GUTENBERG LICENSE" in nav_item.nav_label:
@@ -272,6 +284,7 @@ def chapterize(file_path):
         # Headings without text only lead into the next chapter's title within their own file
         if i and section['item'] is not sections[i - 1]['item']:
             no_sentences_heading = ''
+            no_sentences_href = None
         label = nav_item.nav_label
         # A label that is only a number, like "2.", or that the contents repeat under different entries, like "Scene II" in every act,
         # is named after its parent entry, unless that entry's heading already leads into this chapter
@@ -279,8 +292,10 @@ def chapterize(file_path):
         if is_ambiguous and nav_item.parent_label and nav_item.parent_label not in no_sentences_heading:
             label = f'{nav_item.parent_label} {label}'
         chapter_title = (no_sentences_heading + label).replace('\n', ' ')
+        chapter_href = no_sentences_href or get_href(reader.opf_dir, section['item'], nav_item.element_id)
         sentences = []
-        for paragraph in section['paragraphs']:
+        sentence_hrefs = []
+        for paragraph_item, paragraph in section['paragraphs']:
             # Paragraphs without any words, such as * * * scene breaks, are left out
             if not re.search(r'\w', paragraph):
                 continue
@@ -293,15 +308,20 @@ def chapterize(file_path):
                 elif sentence:
                     paragraph_sentences.append(sentence)
             sentences.extend(paragraph_sentences)
+            sentence_hrefs.extend([get_href(reader.opf_dir, paragraph_item)] * len(paragraph_sentences))
         if sentences:
             chapters.append({
                 'title': chapter_title,
-                'sentences': sentences
+                'sentences': sentences,
+                'href': chapter_href,
+                'sentence_hrefs': sentence_hrefs,
             })
             no_sentences_heading = ''
+            no_sentences_href = None
         else:
             # chapter_title already starts with the earlier empty headings' titles
             no_sentences_heading = chapter_title + ' '
+            no_sentences_href = chapter_href
 
     return chapters, language, title, author, cover_image
     

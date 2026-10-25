@@ -29,11 +29,13 @@ for chapter in chapters:
 
 | Value | Type | Description |
 |---|---|---|
-| `chapters` | `list[dict]` | List of chapter dicts, each with `"title"` and `"sentences"` keys |
+| `chapters` | `list[dict]` | List of chapter dicts, each with `"title"`, `"sentences"`, `"href"` and `"sentence_hrefs"` keys |
 | `language` | `str` | BCP 47 language code detected from the EPUB metadata (e.g. `"en"`, `"fr"`) |
 | `title` | `str` | Book title from EPUB metadata |
 | `author` | `str` | Author name from EPUB metadata |
 | `cover_image` | `bytes \| None` | Raw bytes of the cover image, or `None` if not found |
+
+A chapter's `"href"` is where it starts in the EPUB, and `"sentence_hrefs"` gives the file each of its sentences is in, in the same order as `"sentences"`. Both are paths from the root of the EPUB written as URLs, which is how readers such as Readium name the files. In the Standard Ebooks Dracula, chapter I has `"href": "epub/text/chapter-1.xhtml"`, and its sentences are all in `"epub/text/chapter-1.xhtml"`.
 
 ### Example output
 
