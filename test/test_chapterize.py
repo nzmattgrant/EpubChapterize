@@ -132,12 +132,13 @@ class ChapterizeTest(unittest.TestCase):
 
     def test_chapters_record_where_they_start_and_the_file_of_each_sentence(self):
         # write_epub puts the files in an EPUB folder, which the paths start from as they're from the root of the EPUB
-        files = {'part one.xhtml': '<h1 id="a">Part One</h1><h2 id="b">I</h2><p>Start of one.</p>',
-                 'two.xhtml': '<p>End of one.</p><h2 id="c">II</h2><p>Two.</p>'}
-        toc = [('part one.xhtml#a', 'Part One'), ('part one.xhtml#b', 'I'), ('two.xhtml#c', 'II')]
-        self.assertEqual([(chapter['href'], chapter['sentence_hrefs']) for chapter in chapterize_book(files, toc)],
-                         [('EPUB/part%20one.xhtml#a', ['EPUB/part%20one.xhtml', 'EPUB/two.xhtml']),
-                          ('EPUB/two.xhtml#c', ['EPUB/two.xhtml'])])
+        files = {'part one.xhtml': '<h1 id="a">Part One</h1><h2 id="b">I</h2><p>Start of one. More of one.</p>',
+                 'two.xhtml': '<p>End of one.</p><h2>II</h2><p>Two.</p>'}
+        toc = [('part one.xhtml#a', 'Part One'), ('part one.xhtml#b', 'I'), ('two.xhtml', 'II')]
+        self.assertEqual([(chapter['start_file'], chapter['start_id'], chapter['sentence_files']) for chapter in chapterize_book(files, toc)],
+                         [('EPUB/part%20one.xhtml', 'a', [{'file': 'EPUB/part%20one.xhtml', 'first_sentence': 0},
+                                                          {'file': 'EPUB/two.xhtml', 'first_sentence': 2}]),
+                          ('EPUB/two.xhtml', None, [{'file': 'EPUB/two.xhtml', 'first_sentence': 0}])])
 
     def test_labels_repeated_under_different_entries_are_named_after_their_parent(self):
         files = {'one.xhtml': '<h1 id="a">Act One</h1><h2 id="b">Scene One</h2><p>A.</p><h2 id="c">Scene Two</h2><p>B.</p>',

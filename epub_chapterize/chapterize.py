@@ -165,11 +165,10 @@ def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
                 nav_items.append(NavItem(nav_label, doc_href, element_id, parent_label))
     return nav_items
 
-def get_href(opf_dir, item, element_id=None):
+def get_file(opf_dir, item):
     # The item's path from the root of the EPUB as a URL, which is how readers such as Readium name it;
     # ebooklib's item names are decoded and relative to the package file
-    href = quote(posixpath.join(opf_dir, item.get_name()))
-    return f'{href}#{element_id}' if element_id else href
+    return quote(posixpath.join(opf_dir, item.get_name()))
 
 def chapterize(file_path):
     # As epub.read_epub, keeping the reader for the package file's folder
@@ -276,7 +275,7 @@ def chapterize(file_path):
         if nav_item.parent_label:
             parent_labels.setdefault(nav_item.nav_label, set()).add(nav_item.parent_label)
     no_sentences_heading = ''
-    no_sentences_href = None
+    no_sentences_start = None
     for i, section in enumerate(sections):
         nav_item = section['nav_item']
         if "THE FULL PROJECT GUTENBERG LICENSE" in nav_item.nav_label:
@@ -284,7 +283,7 @@ def chapterize(file_path):
         # Headings without text only lead into the next chapter's title within their own file
         if i and section['item'] is not sections[i - 1]['item']:
             no_sentences_heading = ''
-            no_sentences_href = None
+            no_sentences_start = None
         label = nav_item.nav_label
         # A label that is only a number, like "2.", or that the contents repeat under different entries, like "Scene II" in every act,
         # is named after its parent entry, unless that entry's heading already leads into this chapter
@@ -292,9 +291,10 @@ def chapterize(file_path):
         if is_ambiguous and nav_item.parent_label and nav_item.parent_label not in no_sentences_heading:
             label = f'{nav_item.parent_label} {label}'
         chapter_title = (no_sentences_heading + label).replace('\n', ' ')
-        chapter_href = no_sentences_href or get_href(reader.opf_dir, section['item'], nav_item.element_id)
+        chapter_start = no_sentences_start or (get_file(reader.opf_dir, section['item']), nav_item.element_id)
         sentences = []
-        sentence_hrefs = []
+        # Each file the chapter's sentences are in, with the index of the first of them there
+        sentence_files = []
         for paragraph_item, paragraph in section['paragraphs']:
             # Paragraphs without any words, such as * * * scene breaks, are left out
             if not re.search(r'\w', paragraph):
@@ -307,21 +307,25 @@ def chapterize(file_path):
                     paragraph_sentences[-1] = f'{paragraph_sentences[-1]} {sentence}'.strip()
                 elif sentence:
                     paragraph_sentences.append(sentence)
+            paragraph_file = get_file(reader.opf_dir, paragraph_item)
+            if paragraph_sentences and (not sentence_files or sentence_files[-1]['file'] != paragraph_file):
+                sentence_files.append({'file': paragraph_file, 'first_sentence': len(sentences)})
             sentences.extend(paragraph_sentences)
-            sentence_hrefs.extend([get_href(reader.opf_dir, paragraph_item)] * len(paragraph_sentences))
         if sentences:
+            start_file, start_id = chapter_start
             chapters.append({
                 'title': chapter_title,
                 'sentences': sentences,
-                'href': chapter_href,
-                'sentence_hrefs': sentence_hrefs,
+                'start_file': start_file,
+                'start_id': start_id,
+                'sentence_files': sentence_files,
             })
             no_sentences_heading = ''
-            no_sentences_href = None
+            no_sentences_start = None
         else:
             # chapter_title already starts with the earlier empty headings' titles
             no_sentences_heading = chapter_title + ' '
-            no_sentences_href = chapter_href
+            no_sentences_start = chapter_start
 
     return chapters, language, title, author, cover_image
     

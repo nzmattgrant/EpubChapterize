@@ -29,13 +29,13 @@ for chapter in chapters:
 
 | Value | Type | Description |
 |---|---|---|
-| `chapters` | `list[dict]` | List of chapter dicts, each with `"title"`, `"sentences"`, `"href"` and `"sentence_hrefs"` keys |
+| `chapters` | `list[dict]` | List of chapter dicts, each with `"title"`, `"sentences"`, `"start_file"`, `"start_id"` and `"sentence_files"` keys |
 | `language` | `str` | BCP 47 language code detected from the EPUB metadata (e.g. `"en"`, `"fr"`) |
 | `title` | `str` | Book title from EPUB metadata |
 | `author` | `str` | Author name from EPUB metadata |
 | `cover_image` | `bytes \| None` | Raw bytes of the cover image, or `None` if not found |
 
-A chapter's `"href"` is where it starts in the EPUB, and `"sentence_hrefs"` gives the file each of its sentences is in, in the same order as `"sentences"`. Both are paths from the root of the EPUB written as URLs, which is how readers such as Readium name the files. In the Standard Ebooks Dracula, chapter I has `"href": "epub/text/chapter-1.xhtml"`, and its sentences are all in `"epub/text/chapter-1.xhtml"`.
+A chapter starts in the file `"start_file"`, at the element whose id is `"start_id"` (`None` when the table of contents links to the file itself). `"sentence_files"` lists the files its sentences are in, in order, each with the index in `"sentences"` of the first sentence there; the sentences up to the next entry's are in that file. Files are paths from the root of the EPUB written as URLs, which is how readers such as Readium name them. In the Standard Ebooks Dracula, chapter I has `"start_file": "epub/text/chapter-1.xhtml"`, `"start_id": None` and `"sentence_files": [{"file": "epub/text/chapter-1.xhtml", "first_sentence": 0}]`.
 
 ### Example output
 

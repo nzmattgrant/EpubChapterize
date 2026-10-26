@@ -1,6 +1,6 @@
 2026.10.25 - v0.4.0
 
-- Each chapter records where it starts in the EPUB (`href`, like `"OEBPS/chapter-1.xhtml#heading"`) and which of the EPUB's files each of its sentences is in (`sentence_hrefs`, in the same order as `sentences`), so a reader showing the EPUB can find a chapter's text. The paths are from the root of the EPUB and are URLs, as readers such as Readium name the files
+- Each chapter records where it starts in the EPUB (`start_file`, and `start_id`, the id of the place in that file the table of contents links to, or `None`) and which of the EPUB's files its sentences are in (`sentence_files`, one `{"file", "first_sentence"}` entry per file, in order), so a reader showing the EPUB can find a chapter's text. The files are paths from the root of the EPUB written as URLs, as readers such as Readium name them
 
 2026.10.20 - v0.3.2
 
