@@ -165,16 +165,10 @@ def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
                 nav_items.append(NavItem(nav_label, doc_href, element_id, parent_label))
     return nav_items
 
-def get_file(opf_dir, item):
-    # The item's path from the root of the EPUB as a URL, which is how readers such as Readium name it;
-    # ebooklib's item names are decoded and relative to the package file
-    return quote(posixpath.join(opf_dir, item.get_name()))
-
 def chapterize(file_path):
-    # As epub.read_epub, keeping the reader for the package file's folder
+    # Unlike the book, the reader keeps the package file's folder
     reader = epub.EpubReader(file_path)
     book = reader.load()
-    reader.process()
     nav_item_infos = get_nav_items_standard_gutenberg_epub3(file_path)
     print(f"Number of nav items found: {len(nav_item_infos)}")
     print("Nav Items:")
@@ -257,9 +251,12 @@ def chapterize(file_path):
             continue
         if item not in spine_items:
             section = None
+        # The item's path from the root of the EPUB as a URL, which is how readers such as Readium name it;
+        # ebooklib's item names are decoded and relative to the package file
+        file = quote(posixpath.join(reader.opf_dir, item.get_name()))
         for element in soups[item].find_all(True):
             for nav_item in nav_items_by_header.get(id(element), []):
-                section = {'nav_item': nav_item, 'item': item, 'paragraphs': []}
+                section = {'nav_item': nav_item, 'file': file, 'paragraphs': []}
                 sections.append(section)
             # A paragraph inside a heading, like the subtitle in <hgroup><h2>I</h2><p>Loomings</p></hgroup>, is part of the heading
             if element.name == 'p' and section and not element.find_parent(HEADER_TAGS):
@@ -267,35 +264,33 @@ def chapterize(file_path):
                 # which only control line breaking
                 paragraph_text = ''.join(char for char in get_displayed_text(element) if unicodedata.category(char) != 'Cf')
                 # Collapse all whitespace, including no-break and hair spaces, into ordinary spaces
-                section['paragraphs'].append((item, ' '.join(paragraph_text.split())))
+                section['paragraphs'].append((file, ' '.join(paragraph_text.split())))
 
     # The parent entries each label appears under; some contents also repeat every entry at the top level, without a parent
     parent_labels = {}
     for nav_item in nav_item_infos:
         if nav_item.parent_label:
             parent_labels.setdefault(nav_item.nav_label, set()).add(nav_item.parent_label)
-    no_sentences_heading = ''
-    no_sentences_start = None
+    # The title and start of headings without text, which lead into the next chapter
+    lead_in = None
     for i, section in enumerate(sections):
         nav_item = section['nav_item']
         if "THE FULL PROJECT GUTENBERG LICENSE" in nav_item.nav_label:
             continue
         # Headings without text only lead into the next chapter's title within their own file
-        if i and section['item'] is not sections[i - 1]['item']:
-            no_sentences_heading = ''
-            no_sentences_start = None
+        if i and section['file'] != sections[i - 1]['file']:
+            lead_in = None
+        lead_in_title, start = lead_in or ('', {'start_file': section['file'], 'start_id': nav_item.element_id})
         label = nav_item.nav_label
         # A label that is only a number, like "2.", or that the contents repeat under different entries, like "Scene II" in every act,
         # is named after its parent entry, unless that entry's heading already leads into this chapter
         is_ambiguous = len(parent_labels.get(label, ())) > 1 or not any(char.isalpha() for char in label)
-        if is_ambiguous and nav_item.parent_label and nav_item.parent_label not in no_sentences_heading:
+        if is_ambiguous and nav_item.parent_label and nav_item.parent_label not in lead_in_title:
             label = f'{nav_item.parent_label} {label}'
-        chapter_title = (no_sentences_heading + label).replace('\n', ' ')
-        chapter_start = no_sentences_start or (get_file(reader.opf_dir, section['item']), nav_item.element_id)
+        chapter_title = (lead_in_title + label).replace('\n', ' ')
         sentences = []
-        # Each file the chapter's sentences are in, with the index of the first of them there
         sentence_files = []
-        for paragraph_item, paragraph in section['paragraphs']:
+        for paragraph_file, paragraph in section['paragraphs']:
             # Paragraphs without any words, such as * * * scene breaks, are left out
             if not re.search(r'\w', paragraph):
                 continue
@@ -307,25 +302,20 @@ def chapterize(file_path):
                     paragraph_sentences[-1] = f'{paragraph_sentences[-1]} {sentence}'.strip()
                 elif sentence:
                     paragraph_sentences.append(sentence)
-            paragraph_file = get_file(reader.opf_dir, paragraph_item)
             if paragraph_sentences and (not sentence_files or sentence_files[-1]['file'] != paragraph_file):
                 sentence_files.append({'file': paragraph_file, 'first_sentence': len(sentences)})
             sentences.extend(paragraph_sentences)
         if sentences:
-            start_file, start_id = chapter_start
             chapters.append({
                 'title': chapter_title,
                 'sentences': sentences,
-                'start_file': start_file,
-                'start_id': start_id,
+                **start,
                 'sentence_files': sentence_files,
             })
-            no_sentences_heading = ''
-            no_sentences_start = None
+            lead_in = None
         else:
             # chapter_title already starts with the earlier empty headings' titles
-            no_sentences_heading = chapter_title + ' '
-            no_sentences_start = chapter_start
+            lead_in = (chapter_title + ' ', start)
 
     return chapters, language, title, author, cover_image
     
