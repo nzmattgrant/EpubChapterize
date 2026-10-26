@@ -23,8 +23,8 @@ def contents_links(toc, ids=None):
             for link, label, *children in toc]
 
 
-def write_epub(path, files, toc, contents_file='toc.ncx', extra_items=()):
-    # files maps file names to body HTML; toc is as for contents_links, with links relative to contents_file
+def write_epub(path, files, toc, contents=None, extra_items=()):
+    # files maps file names to body HTML; toc is as for contents_links, with links relative to the contents file
     book = epub.EpubBook()
     book.set_identifier('test')
     book.set_title('Test Book')
@@ -36,7 +36,7 @@ def write_epub(path, files, toc, contents_file='toc.ncx', extra_items=()):
         book.add_item(item)
         book.spine.append(item)
     book.toc = contents_links(toc)
-    book.add_item(epub.EpubNcx(file_name=contents_file))
+    book.add_item(contents or epub.EpubNcx())
     book.add_item(epub.EpubNav())
     for item in extra_items:
         book.add_item(item)
@@ -158,15 +158,23 @@ class ChapterizeTest(unittest.TestCase):
                          [('EPUB/a+b&c%20d.xhtml', None)])
 
     def test_contents_links_are_relative_to_the_contents_file(self):
-        chapters = chapterize_book({'one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}, [('../one.xhtml#a', 'I')], contents_file='nav/toc.ncx')
+        chapters = chapterize_book({'one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}, [('../one.xhtml#a', 'I')], contents=epub.EpubNcx(file_name='nav/toc.ncx'))
         self.assertEqual([(chapter['title'], chapter['start_file'], chapter['start_id']) for chapter in chapters], [('I', 'EPUB/one.xhtml', 'a')])
 
-    def test_only_the_books_own_contents_are_read(self):
-        # Calibre keeps the contents of each book it merges into one, with a media type readers skip
-        merged_contents = epub.EpubItem(file_name='1/toc.ncx', media_type='origtocncx/xml',
-                                        content='<ncx><navMap><navPoint><navLabel><text>Other</text></navLabel><content src="../one.xhtml#a"/></navPoint></navMap></ncx>')
-        chapters = chapterize_book({'one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}, [('one.xhtml#a', 'I')], extra_items=[merged_contents])
+    def test_the_contents_are_read_from_the_file_the_spine_names(self):
+        contents = epub.EpubNcx()
+        contents.media_type = 'text/xml'
+        chapters = chapterize_book({'one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}, [('one.xhtml#a', 'I')], contents=contents)
         self.assertEqual([(chapter['title'], chapter['sentences']) for chapter in chapters], [('I', ['One.'])])
+
+    def test_other_contents_files_are_not_read(self):
+        # Like the contents Calibre keeps of each book it merges into one, with a media type readers skip, or another with the usual one
+        for media_type in ['origtocncx/xml', 'application/x-dtbncx+xml']:
+            with self.subTest(media_type=media_type):
+                other_contents = epub.EpubItem(file_name='1/toc.ncx', media_type=media_type,
+                                               content='<ncx><navMap><navPoint><navLabel><text>Other</text></navLabel><content src="../one.xhtml#a"/></navPoint></navMap></ncx>')
+                chapters = chapterize_book({'one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}, [('one.xhtml#a', 'I')], extra_items=[other_contents])
+                self.assertEqual([(chapter['title'], chapter['sentences']) for chapter in chapters], [('I', ['One.'])])
 
     def test_labels_repeated_under_different_entries_are_named_after_their_parent(self):
         files = {'one.xhtml': '<h1 id="a">Act One</h1><h2 id="b">Scene One</h2><p>A.</p><h2 id="c">Scene Two</h2><p>B.</p>',
