@@ -42,9 +42,9 @@ nlp_models = {}
 @dataclass
 class NavItem:
     nav_label: str
-    doc_href: str
-    element_id: str
-    parent_label: str = None
+    doc_path: str | None
+    element_id: str | None
+    parent_label: str | None = None
 
 @dataclass
 class HeaderMatch:
@@ -94,9 +94,9 @@ def get_sent_method(language_code):
     else:
         raise ValueError(f"Unknown sentence segmentation method: {sent_method}")
 
-def get_matched_header_for_nav_item(nav_item: NavItem, book, soups) -> HeaderMatch:
+def get_matched_header_for_nav_item(nav_item: NavItem, soups) -> HeaderMatch:
     print(f"Getting matched header for nav item: {nav_item}")
-    linked_soup = soups.get(book.get_item_with_href(nav_item.doc_href))
+    linked_soup = soups.get(nav_item.doc_path)
     if not linked_soup:
         return None
     anchor = linked_soup.find(id=nav_item.element_id) if nav_item.element_id else None
@@ -109,7 +109,7 @@ def get_matched_header_for_nav_item(nav_item: NavItem, book, soups) -> HeaderMat
     # Otherwise match the label and take the shortest match, as a label like "I" also matches any longer header containing an i
     matches = [HeaderMatch(header, header.get_text(' ', strip=True), nav_item) for header in linked_soup.find_all(HEADER_TAGS)]
     matches = [match for match in matches if pattern.search(match.header_text)]
-    print(f"Headers in {nav_item.doc_href} matching {pattern.pattern}: {[match.header_text for match in matches]}")
+    print(f"Headers in {nav_item.doc_path} matching {pattern.pattern}: {[match.header_text for match in matches]}")
     return min(matches, key=lambda match: len(match.header_text), default=None)
 
 # EPUB 3 epub:type markers for footnote references, note backlinks and page numbers
@@ -143,36 +143,38 @@ def generate_header_pattern(target_text):
     # DOTALL so the words also match across line breaks inside a header
     return re.compile(pattern, re.IGNORECASE | re.DOTALL)
 
-def get_nav_items_standard_gutenberg_epub3(book) -> list[NavItem]:
+def get_nav_items_standard_gutenberg_epub3(book, opf_dir) -> list[NavItem]:
     nav_items = []
 
-    for item in book.get_items():
-        if item.get_type() == ebooklib.ITEM_NAVIGATION:
-            html_content = item.get_content().decode()
-            soup = BeautifulSoup(html_content, 'xml')
-            navpoints = soup.find_all('navPoint')
-            for navpoint in navpoints:
-                nav_label = navpoint.find('navLabel').find("text").get_text(strip=True)
-                content = navpoint.find('content')
-                doc_href = None
-                element_id = None
-                if content and content.has_attr('src'):
-                    # Links are URLs, while ebooklib's item names are decoded
-                    doc_href, _, element_id = map(unquote, content['src'].partition('#'))
-                parent = navpoint.find_parent('navPoint')
-                parent_label = parent.find('navLabel').find("text").get_text(strip=True) if parent else None
-                nav_items.append(NavItem(nav_label, doc_href, element_id or None, parent_label))
+    # Only the book's contents, which ebooklib reads as EpubNcx, and not other .ncx files it carries,
+    # like the contents of the books Calibre merges into one
+    for item in [item for item in book.get_items() if isinstance(item, epub.EpubNcx)]:
+        html_content = item.get_content().decode()
+        soup = BeautifulSoup(html_content, 'xml')
+        navpoints = soup.find_all('navPoint')
+        for navpoint in navpoints:
+            nav_label = navpoint.find('navLabel').find("text").get_text(strip=True)
+            content = navpoint.find('content')
+            doc_path = None
+            element_id = None
+            if content and content.has_attr('src'):
+                # Links are URLs relative to the contents file, resolved here to the paths documents are known by
+                link_path, _, element_id = map(unquote, content['src'].partition('#'))
+                doc_path = posixpath.normpath(posixpath.join(opf_dir, posixpath.dirname(item.get_name()), link_path))
+            parent = navpoint.find_parent('navPoint')
+            parent_label = parent.find('navLabel').find("text").get_text(strip=True) if parent else None
+            nav_items.append(NavItem(nav_label, doc_path, element_id or None, parent_label))
     return nav_items
 
 def chapterize(file_path):
     # Unlike the book, the reader keeps the package file's folder
     reader = epub.EpubReader(file_path)
     book = reader.load()
-    nav_item_infos = get_nav_items_standard_gutenberg_epub3(book)
+    nav_item_infos = get_nav_items_standard_gutenberg_epub3(book, reader.opf_dir)
     print(f"Number of nav items found: {len(nav_item_infos)}")
     print("Nav Items:")
     for nav_item in nav_item_infos:
-        print(f" - {nav_item.nav_label}, href: {nav_item.doc_href}, id: {nav_item.element_id}")
+        print(f" - {nav_item.nav_label}, path: {nav_item.doc_path}, id: {nav_item.element_id}")
 
     language = book.get_metadata('DC', 'language')
     language = language[0][0] if language else 'en'
@@ -221,11 +223,14 @@ def chapterize(file_path):
         get_sentences = get_sent_method(language)
         nlp_models[language] = get_sentences
     chapters = []
+    # Each item's path from the root of the EPUB, which contents links are resolved to too;
+    # ebooklib's item names are decoded and relative to the package file
+    paths = {item: posixpath.normpath(posixpath.join(reader.opf_dir, item.get_name())) for item in book.get_items()}
     # Parse each document once, so matched headers can be found again by identity; get_body_content() is always UTF-8
-    soups = {item: BeautifulSoup(item.get_body_content(), 'html.parser', from_encoding='utf-8') for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT)}
+    soups = {paths[item]: BeautifulSoup(item.get_body_content(), 'html.parser', from_encoding='utf-8') for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT)}
     matched_candidate_headers: list[HeaderMatch] = []
     for nav_item_info in nav_item_infos:
-        matched_candidate_headers.append(get_matched_header_for_nav_item(nav_item_info, book, soups))
+        matched_candidate_headers.append(get_matched_header_for_nav_item(nav_item_info, soups))
         print(f"Matched header for nav item '{nav_item_info.nav_label}': {matched_candidate_headers[-1]}")
 
     matched_candidate_headers = [candidate_header for candidate_header in matched_candidate_headers if candidate_header is not None]
@@ -246,14 +251,14 @@ def chapterize(file_path):
     sections = []
     section = None
     for item in all_items:
-        if item not in soups:
+        path = paths.get(item)
+        if path not in soups:
             continue
         if item not in spine_items:
             section = None
-        # The item's path from the root of the EPUB as a URL, which is how readers such as Readium name it;
-        # ebooklib's item names are decoded and relative to the package file
-        file = quote(posixpath.normpath(posixpath.join(reader.opf_dir, item.get_name())), safe=URL_PATH_SAFE_CHARACTERS)
-        for element in soups[item].find_all(True):
+        # The path written as a URL, which is how readers such as Readium name files
+        file = quote(path, safe=URL_PATH_SAFE_CHARACTERS)
+        for element in soups[path].find_all(True):
             for nav_item in nav_items_by_header.get(id(element), []):
                 section = {'nav_item': nav_item, 'file': file, 'paragraphs': []}
                 sections.append(section)
