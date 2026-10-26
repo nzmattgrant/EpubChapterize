@@ -43,9 +43,9 @@ def write_epub(path, files, toc, contents=None, extra_items=()):
     epub.write_epub(path, book)
     # ebooklib stores a file named like "text/../one.xhtml" under that name, where an EPUB stores it as the file it names
     with zipfile.ZipFile(path) as written:
-        entries = [(posixpath.normpath(info.filename), written.read(info)) for info in written.infolist()]
+        entries = {posixpath.normpath(info.filename): written.read(info) for info in written.infolist()}
     with zipfile.ZipFile(path, 'w') as normalised:
-        for name, content in entries:
+        for name, content in entries.items():
             normalised.writestr(name, content)
 
 
@@ -162,7 +162,7 @@ class ChapterizeTest(unittest.TestCase):
         self.assertEqual([(chapter['title'], chapter['start_file'], chapter['start_id']) for chapter in chapters], [('I', 'EPUB/one.xhtml', 'a')])
 
     def test_the_contents_are_read_from_the_file_the_spine_names(self):
-        contents = epub.EpubNcx()
+        contents = epub.EpubNcx(file_name='contents.xml')
         contents.media_type = 'text/xml'
         chapters = chapterize_book({'one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}, [('one.xhtml#a', 'I')], contents=contents)
         self.assertEqual([(chapter['title'], chapter['sentences']) for chapter in chapters], [('I', ['One.'])])
@@ -175,6 +175,10 @@ class ChapterizeTest(unittest.TestCase):
                                                content='<ncx><navMap><navPoint><navLabel><text>Other</text></navLabel><content src="../one.xhtml#a"/></navPoint></navMap></ncx>')
                 chapters = chapterize_book({'one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}, [('one.xhtml#a', 'I')], extra_items=[other_contents])
                 self.assertEqual([(chapter['title'], chapter['sentences']) for chapter in chapters], [('I', ['One.'])])
+
+    def test_documents_the_manifest_lists_twice_are_read_once(self):
+        files = {'one.xhtml': '<h2 id="a">I</h2><p>One.</p>', 'x/../one.xhtml': '<h2 id="a">I</h2><p>One.</p>'}
+        self.assertEqual(chapterize_files(files, [('one.xhtml#a', 'I')]), [('I', ['One.'])])
 
     def test_labels_repeated_under_different_entries_are_named_after_their_parent(self):
         files = {'one.xhtml': '<h1 id="a">Act One</h1><h2 id="b">Scene One</h2><p>A.</p><h2 id="c">Scene Two</h2><p>B.</p>',

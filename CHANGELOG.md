@@ -1,6 +1,7 @@
 2026.10.26 - v0.4.0
 
 - Contents links find their files when they're written as URLs, like `part%20one.xhtml` for the file "part one.xhtml", when the contents file is in another folder from the book's package file, and when they write a file's path another way than the package file does, like `text/../one.xhtml` for `one.xhtml`, so those books no longer lose chapters
+- The contents are read from the file the book's spine names, as readers find them, whatever that file is called or its media type says, and not from other contents files a book carries, like those Calibre keeps of each book it merges into one. A book whose spine names no contents file has no chapters, where any file ending in .ncx was read before
 - Each chapter records where it starts in the EPUB (`start_file`, and `start_id`, the id of the place in that file the table of contents links to, or `None`) and which of the EPUB's files its sentences are in (`sentence_files`, one `{"file", "first_sentence"}` entry per file, in order), so a reader showing the EPUB can find a chapter's text. The files are paths from the root of the EPUB written as URLs, as readers such as Readium name them
 
 2026.10.20 - v0.3.2

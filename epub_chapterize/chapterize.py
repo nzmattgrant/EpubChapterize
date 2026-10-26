@@ -143,25 +143,22 @@ def generate_header_pattern(target_text):
     # DOTALL so the words also match across line breaks inside a header
     return re.compile(pattern, re.IGNORECASE | re.DOTALL)
 
-def get_nav_items_standard_gutenberg_epub3(contents_items, paths) -> list[NavItem]:
+def get_nav_items_standard_gutenberg_epub3(contents_item, contents_path) -> list[NavItem]:
     nav_items = []
-
-    for item in contents_items:
-        # The bytes, so the XML declaration can name their encoding
-        soup = BeautifulSoup(item.get_content(), 'xml')
-        navpoints = soup.find_all('navPoint')
-        for navpoint in navpoints:
-            nav_label = navpoint.find('navLabel').find("text").get_text(strip=True)
-            content = navpoint.find('content')
-            doc_path = None
-            element_id = None
-            if content and content.has_attr('src'):
-                # Links are URLs relative to the contents file
-                link_path, _, element_id = map(unquote, content['src'].partition('#'))
-                doc_path = posixpath.normpath(posixpath.join(posixpath.dirname(paths[item]), link_path))
-            parent = navpoint.find_parent('navPoint')
-            parent_label = parent.find('navLabel').find("text").get_text(strip=True) if parent else None
-            nav_items.append(NavItem(nav_label, doc_path, element_id or None, parent_label))
+    # The bytes, so the XML declaration can name their encoding
+    soup = BeautifulSoup(contents_item.get_content(), 'xml')
+    for navpoint in soup.find_all('navPoint'):
+        nav_label = navpoint.find('navLabel').find("text").get_text(strip=True)
+        content = navpoint.find('content')
+        doc_path = None
+        element_id = None
+        if content and content.has_attr('src'):
+            # Links are URLs relative to the contents file
+            link_path, _, element_id = map(unquote, content['src'].partition('#'))
+            doc_path = posixpath.normpath(posixpath.join(posixpath.dirname(contents_path), link_path))
+        parent = navpoint.find_parent('navPoint')
+        parent_label = parent.find('navLabel').find("text").get_text(strip=True) if parent else None
+        nav_items.append(NavItem(nav_label, doc_path, element_id or None, parent_label))
     return nav_items
 
 def chapterize(file_path):
@@ -171,10 +168,10 @@ def chapterize(file_path):
     # Each item's path from the root of the EPUB, which contents links are resolved to too;
     # ebooklib's item names are decoded and relative to the package file
     paths = {item: posixpath.normpath(posixpath.join(reader.opf_dir, item.get_name())) for item in book.get_items()}
-    # The book's contents are in the file its spine names, as it can carry others, like the contents of the books Calibre merges into one
-    spine_toc = reader.container.find(f'{{{epub.NAMESPACES["OPF"]}}}spine').get('toc')
-    contents_items = [book.get_item_with_id(spine_toc)] if spine_toc else book.get_items_of_type(ebooklib.ITEM_NAVIGATION)
-    nav_item_infos = get_nav_items_standard_gutenberg_epub3(contents_items, paths)
+    # The book's contents are in the file its spine names, as readers find them; it can carry others,
+    # like the contents of the books Calibre merges into one
+    contents_item = book.get_item_with_id(reader.container.find(f'{{{epub.NAMESPACES["OPF"]}}}spine').get('toc'))
+    nav_item_infos = get_nav_items_standard_gutenberg_epub3(contents_item, paths[contents_item]) if contents_item else []
     print(f"Number of nav items found: {len(nav_item_infos)}")
     print("Nav Items:")
     for nav_item in nav_item_infos:
@@ -229,7 +226,7 @@ def chapterize(file_path):
     chapters = []
     # Parse each document once, so matched headers can be found again by identity; get_body_content() is always UTF-8
     soups = {paths[item]: BeautifulSoup(item.get_body_content(), 'html.parser', from_encoding='utf-8') for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT)}
-    matched_candidate_headers: list[HeaderMatch] = []
+    matched_candidate_headers: list[HeaderMatch | None] = []
     for nav_item_info in nav_item_infos:
         matched_candidate_headers.append(get_matched_header_for_nav_item(nav_item_info, soups))
         print(f"Matched header for nav item '{nav_item_info.nav_label}': {matched_candidate_headers[-1]}")
