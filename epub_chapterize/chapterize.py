@@ -3,7 +3,7 @@ import os
 import posixpath
 import re
 import unicodedata
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup, Tag
@@ -53,6 +53,8 @@ class HeaderMatch:
     nav_item: NavItem
 
 HEADER_TAGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hgroup']
+# Characters other than letters, digits and -._~ that Readium leaves as they are in a file's URL, as Go's URL paths do
+URL_PATH_SAFE_CHARACTERS = "/$&+,:;=@"
 sent_method = "nltk"  # Options: "nltk", "spacy", "syntok"
 
 def syntok_segmenter(text):
@@ -141,8 +143,7 @@ def generate_header_pattern(target_text):
     # DOTALL so the words also match across line breaks inside a header
     return re.compile(pattern, re.IGNORECASE | re.DOTALL)
 
-def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
-    book = epub.read_epub(file_path)
+def get_nav_items_standard_gutenberg_epub3(book) -> list[NavItem]:
     nav_items = []
 
     for item in book.get_items():
@@ -156,20 +157,18 @@ def get_nav_items_standard_gutenberg_epub3(file_path) -> list[NavItem]:
                 doc_href = None
                 element_id = None
                 if content and content.has_attr('src'):
-                    src = content['src']
-                    src_parts = src.split('#')
-                    doc_href = src_parts[0]
-                    element_id = src_parts[1] if len(src_parts) > 1 else None
+                    # Links are URLs, while ebooklib's item names are decoded
+                    doc_href, _, element_id = map(unquote, content['src'].partition('#'))
                 parent = navpoint.find_parent('navPoint')
                 parent_label = parent.find('navLabel').find("text").get_text(strip=True) if parent else None
-                nav_items.append(NavItem(nav_label, doc_href, element_id, parent_label))
+                nav_items.append(NavItem(nav_label, doc_href, element_id or None, parent_label))
     return nav_items
 
 def chapterize(file_path):
     # Unlike the book, the reader keeps the package file's folder
     reader = epub.EpubReader(file_path)
     book = reader.load()
-    nav_item_infos = get_nav_items_standard_gutenberg_epub3(file_path)
+    nav_item_infos = get_nav_items_standard_gutenberg_epub3(book)
     print(f"Number of nav items found: {len(nav_item_infos)}")
     print("Nav Items:")
     for nav_item in nav_item_infos:
@@ -253,7 +252,7 @@ def chapterize(file_path):
             section = None
         # The item's path from the root of the EPUB as a URL, which is how readers such as Readium name it;
         # ebooklib's item names are decoded and relative to the package file
-        file = quote(posixpath.join(reader.opf_dir, item.get_name()))
+        file = quote(posixpath.normpath(posixpath.join(reader.opf_dir, item.get_name())), safe=URL_PATH_SAFE_CHARACTERS)
         for element in soups[item].find_all(True):
             for nav_item in nav_items_by_header.get(id(element), []):
                 section = {'nav_item': nav_item, 'file': file, 'paragraphs': []}
@@ -271,12 +270,11 @@ def chapterize(file_path):
     for nav_item in nav_item_infos:
         if nav_item.parent_label:
             parent_labels.setdefault(nav_item.nav_label, set()).add(nav_item.parent_label)
+    sections = [section for section in sections if "THE FULL PROJECT GUTENBERG LICENSE" not in section['nav_item'].nav_label]
     # The title and start of headings without text, which lead into the next chapter
     lead_in = None
     for i, section in enumerate(sections):
         nav_item = section['nav_item']
-        if "THE FULL PROJECT GUTENBERG LICENSE" in nav_item.nav_label:
-            continue
         # Headings without text only lead into the next chapter's title within their own file
         if i and section['file'] != sections[i - 1]['file']:
             lead_in = None

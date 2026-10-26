@@ -1,5 +1,6 @@
-2026.10.25 - v0.4.0
+2026.10.26 - v0.4.0
 
+- Contents links written as URLs, like `part%20one.xhtml` for the file "part one.xhtml", now find their files, so books with spaces or other characters that URLs encode in their file names no longer lose those chapters
 - Each chapter records where it starts in the EPUB (`start_file`, and `start_id`, the id of the place in that file the table of contents links to, or `None`) and which of the EPUB's files its sentences are in (`sentence_files`, one `{"file", "first_sentence"}` entry per file, in order), so a reader showing the EPUB can find a chapter's text. The files are paths from the root of the EPUB written as URLs, as readers such as Readium name them
 
 2026.10.20 - v0.3.2

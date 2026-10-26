@@ -3,10 +3,12 @@ import contextlib
 import io
 import itertools
 import os
+import posixpath
 import sys
 import tempfile
 import unittest
 import unittest.mock
+import zipfile
 
 from ebooklib import epub
 
@@ -37,6 +39,12 @@ def write_epub(path, files, toc):
     book.add_item(epub.EpubNcx())
     book.add_item(epub.EpubNav())
     epub.write_epub(path, book)
+    # ebooklib stores a file named like "text/../one.xhtml" under that name, where an EPUB stores it as the file it names
+    with zipfile.ZipFile(path) as written:
+        entries = [(posixpath.normpath(info.filename), written.read(info)) for info in written.infolist()]
+    with zipfile.ZipFile(path, 'w') as normalised:
+        for name, content in entries:
+            normalised.writestr(name, content)
 
 
 def chapterize_book(files, toc):
@@ -134,11 +142,18 @@ class ChapterizeTest(unittest.TestCase):
         # write_epub puts the files in an EPUB folder, which the paths start from as they're from the root of the EPUB
         files = {'part one.xhtml': '<h1 id="a">Part One</h1><h2 id="b">I</h2><p>Start of one. More of one.</p>',
                  'two.xhtml': '<p>End of one.</p><h2>II</h2><p>Two.</p>'}
-        toc = [('part one.xhtml#a', 'Part One'), ('part one.xhtml#b', 'I'), ('two.xhtml', 'II')]
+        toc = [('part%20one.xhtml#a', 'Part One'), ('part%20one.xhtml#b', 'I'), ('two.xhtml', 'II')]
         self.assertEqual([(chapter['start_file'], chapter['start_id'], chapter['sentence_files']) for chapter in chapterize_book(files, toc)],
                          [('EPUB/part%20one.xhtml', 'a', [{'file': 'EPUB/part%20one.xhtml', 'first_sentence': 0},
                                                           {'file': 'EPUB/two.xhtml', 'first_sentence': 2}]),
                           ('EPUB/two.xhtml', None, [{'file': 'EPUB/two.xhtml', 'first_sentence': 0}])])
+
+    def test_file_paths_are_written_as_readium_writes_them(self):
+        # Readium resolves "..", and encodes a space but not characters such as + and &
+        files = {'text/../a+b&c d.xhtml': '<h2 id="a">I</h2><p>One.</p>'}
+        toc = [('text/../a+b&c%20d.xhtml#', 'I')]
+        self.assertEqual([(chapter['start_file'], chapter['start_id']) for chapter in chapterize_book(files, toc)],
+                         [('EPUB/a+b&c%20d.xhtml', None)])
 
     def test_labels_repeated_under_different_entries_are_named_after_their_parent(self):
         files = {'one.xhtml': '<h1 id="a">Act One</h1><h2 id="b">Scene One</h2><p>A.</p><h2 id="c">Scene Two</h2><p>B.</p>',
@@ -150,10 +165,11 @@ class ChapterizeTest(unittest.TestCase):
                          [('Act One Scene One', ['A.']), ('Act One Scene Two', ['B.']), ('Act Two Scene One', ['C.']),
                           ('Act Two Scene Two', ['D.']), ('Finale', ['E.']), ('Act Two 3.', ['F.'])])
 
-    def test_headings_without_text_only_join_titles_in_their_own_file(self):
+    def test_headings_without_text_only_lead_into_chapters_in_their_own_file(self):
         files = {'title.xhtml': '<h1 id="a">The Book</h1>', 'one.xhtml': '<h2 id="b">I</h2><p>Text.</p>'}
         toc = [('title.xhtml#a', 'The Book'), ('one.xhtml#b', 'I')]
-        self.assertEqual(chapterize_files(files, toc), [('I', ['Text.'])])
+        self.assertEqual([(chapter['title'], chapter['start_file'], chapter['start_id']) for chapter in chapterize_book(files, toc)],
+                         [('I', 'EPUB/one.xhtml', 'b')])
 
     def test_headings_without_text_join_the_next_chapter_title_once(self):
         files = {'text.xhtml': '<h1 id="a">Part One</h1><h2 id="b">Book One</h2><h3 id="c">I</h3><p>Text.</p>'}

@@ -35,30 +35,37 @@ for chapter in chapters:
 | `author` | `str` | Author name from EPUB metadata |
 | `cover_image` | `bytes \| None` | Raw bytes of the cover image, or `None` if not found |
 
-A chapter starts in the file `"start_file"`, at the element whose id is `"start_id"` (`None` when the table of contents links to the file itself). `"sentence_files"` lists the files its sentences are in, in order, each with the index in `"sentences"` of the first sentence there; the sentences up to the next entry's are in that file. Files are paths from the root of the EPUB written as URLs, which is how readers such as Readium name them. In the Standard Ebooks Dracula, chapter I has `"start_file": "epub/text/chapter-1.xhtml"`, `"start_id": None` and `"sentence_files": [{"file": "epub/text/chapter-1.xhtml", "first_sentence": 0}]`.
+A chapter starts in the file `"start_file"`, at the element whose id is `"start_id"`, which is where the table of contents links to (`None` when it links to the file itself). When headings in the same file with no text of their own lead into a chapter, like a part heading just before its first chapter, the chapter's title starts with theirs and the chapter starts where the first of them does. `"sentence_files"` lists the files its sentences are in, in order, each with the index in `"sentences"` of the first sentence there; the sentences up to the next entry's are in that file. Files are paths from the root of the EPUB written as URLs, which is how readers such as Readium name them.
 
 ### Example output
 
-For `dracula.epub` the returned `chapters` list looks like:
+For the Standard Ebooks `dracula.epub` the returned `chapters` list looks like:
 
 ```python
 [
+    {"title": "Imprint", ...},
     {
-        "title": "Jonathan Harker's Journal",
+        "title": "I",
         "sentences": [
-            "3 May. Bistritz.—Left Munich at 8:35 P. M., on 1st May, arriving at Vienna early next morning; should have arrived at 6:46, but train was an hour late.",
-            "Buda-Pesth seems a wonderful place, from the glimpse which I got of it from the train and the little I could walk through the streets.",
-            "I feared to go very far from the station, as we had arrived late and would start as near the correct time as possible.",
-            "The impression I had was that we were leaving the West and entering the East; the most western of splendid bridges over the Danube, which is here of noble width and depth, took us among the traditions of Turkish rule."
-        ]
+            "Jonathan Harker’s Journal.",
+            "(Kept in shorthand.)",
+            "3 May.",
+            ...
+        ],
+        "start_file": "epub/text/chapter-1.xhtml",
+        "start_id": None,
+        "sentence_files": [{"file": "epub/text/chapter-1.xhtml", "first_sentence": 0}]
     },
     {
-        "title": "Jonathan Harker's Journal (Continued)",
+        "title": "II",
         "sentences": [
+            "Jonathan Harker’s Journal—continued",
             "5 May.—I must have been asleep, for certainly if I had been fully awake I must have noticed the approach of such a remarkable place.",
-            "In the gloom the courtyard looked of considerable size, and as several dark ways led from it under great round arches, it perhaps seemed bigger than it really is.",
             ...
-        ]
+        ],
+        "start_file": "epub/text/chapter-2.xhtml",
+        "start_id": None,
+        "sentence_files": [{"file": "epub/text/chapter-2.xhtml", "first_sentence": 0}]
     },
     ...
 ]
